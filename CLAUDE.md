@@ -9,11 +9,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 ```bash
-# Run development server
+# Run development server (auto-increments port if 5173 is occupied)
 npm run dev
 
 # Run all tests
 npm test
+
+# Run specific test file
+npm test src/utils/priceCalculator.test.js
 
 # Run tests with UI  
 npm test:ui
@@ -33,50 +36,73 @@ npm run preview
 核心計算邏輯位於 `src/utils/priceCalculator.js`：
 
 ### calculateAreas - 面積計算
-關鍵點：共同使用部分需扣除車位面積
-- `commonAreasWithoutParking = (commonArea1 + commonArea2) - parkingArea`
-- `buildingTotalArea = 主建物 + 陽台 + 雨遮 + commonAreasWithoutParking`
-- 實際數據：建物總面積 39.96坪（不含車位），總面積 50.32坪（含車位）
+**重要**：共同使用部分原始數據包含車位，需扣除
+```javascript
+// 原始：commonArea1 (18.93) + commonArea2 (3.87) = 22.80坪
+// 扣除車位：22.80 - parkingArea (10.36) = 12.44坪
+commonAreasWithoutParking = totalCommonWithParking - parkingArea
+buildingTotalArea = mainBuilding + balcony + canopy + commonAreasWithoutParking
+// 結果：23.43 + 2.81 + 1.28 + 12.44 = 39.96坪
+```
 
-### calculatePrices - 價格計算  
-- `baseBuildingPrice = buildingTotalArea × unitPrice`
-- `adjustedBuildingPrice = baseBuildingPrice × floorPremium × agePremium`
-- `totalPrice = adjustedBuildingPrice + parkingPrice`
-- 注意：單價是針對不含車位的建物面積
+### calculatePrices - 價格計算
+**注意**：`buildingTotalArea` 已經是不含車位的面積，不需再扣除
+```javascript
+baseBuildingPrice = buildingTotalArea × unitPrice  // 39.96 × 64.56
+adjustedBuildingPrice = baseBuildingPrice × floorPremium × agePremium
+totalPrice = adjustedBuildingPrice + parkingPrice  // 2579.82 + 220 ≈ 2800
+```
 
 ### calculateRatios - 比例分析
-- **公設比 = 12.44 ÷ 39.96 = 31.13%**（台灣標準計算）
-- **得房率 = 27.52 ÷ 39.96 = 68.87%**（主建物+附屬建物）
-- 主建物占比 = 23.43 ÷ 39.96 = 58.64%
+```javascript
+publicFacilityRatio = commonAreasWithoutParking / buildingTotalArea  // 12.44 ÷ 39.96 = 31.13%
+usableAreaRatio = (mainBuilding + balcony + canopy) / buildingTotalArea  // 27.52 ÷ 39.96 = 68.87%
+```
 
-## Critical Data Points
+## UI Implementation Details
 
-基於實價登錄的關鍵數據：
-- **共同使用部分原始數據**：18.93 + 3.87 = 22.80坪（包含車位）
-- **共同使用部分（不含車位）**：22.80 - 10.36 = 12.44坪
-- **建物總面積（不含車位）**：23.43 + 2.81 + 1.28 + 12.44 = 39.96坪
-- **單價**：(2800 - 220) ÷ 39.96 = 64.56萬元/坪
+### 公式顯示增強 (App.jsx)
+1. **建物總面積公式**：需顯示共同使用部分的詳細扣除過程
+   - 顯示 `(18.93 + 3.87 - 10.36)` 的計算過程
+   
+2. **比例計算公式框**：使用 `formula-box` 組件
+   - 公設比：完整顯示分子分母和計算結果
+   - 得房率：分步顯示加總過程
 
-## UI Implementation Notes
+3. **價格顯示修正**：
+   - 基礎價格顯示：`baseBuildingPrice`
+   - 調整後價格：`adjustedBuildingPrice`
+   - 避免使用 `prices.totalPrice` 直接顯示，改用 `parseFloat` 確保精確度
 
-### 公式顯示
-- 公設比和得房率需顯示完整計算式（見 `App.jsx` 中的 `formula-box` 組件）
-- 建物總面積計算需明確顯示共同使用部分的扣除過程
+### 狀態管理
+```javascript
+// 初始參數定義避免重複
+const initialParams = { /* ... */ }
+const [parameters, setParameters] = useState(initialParams)
 
-### 狀態初始化
-- 使用 lazy initialization 避免初始渲染時的空物件問題
-- `useState(() => calculateAreas(initialParams))`
+// Lazy initialization 防止初始空物件問題
+const [areas, setAreas] = useState(() => calculateAreas(initialParams))
+const [prices, setPrices] = useState(() => calculatePrices(initialParams))
+```
 
-## Test Coverage
+## Critical Validation Points
 
-18個單元測試涵蓋：
-- 面積計算（特別注意公設扣除車位的邏輯）
-- 價格計算（驗證總價 ≈ 2800萬）
-- 比例計算（公設比應為31.13%，非45.31%）
-- 邊界條件（零值、極端係數、無車位情況）
+測試驗證的關鍵數值（全部測試通過）：
+- 建物總面積：39.96坪（不是50.32）
+- 公設比：31.13%（不是45.31%）
+- 總價：2799.82 ≈ 2800萬元
+- 單價：64.56萬元/坪
 
-## Common Issues & Solutions
+## Known Issues & Fixes
 
-1. **公設比計算錯誤**：確保使用 `commonAreasWithoutParking` (12.44) 而非總公設 (22.80)
-2. **建物價格顯示錯誤**：檢查是否重複扣除車位面積（29.60 × 64.56 = 1910.98 是錯誤的）
-3. **總價不等於2800**：確認單價為 64.56 萬元/坪
+### 問題1：建物價格顯示1910.98
+**原因**：重複扣除車位面積 (39.96 - 10.36) × 64.56 = 1910.98
+**解法**：確保 `calculatePrices` 直接使用 `areas.buildingTotalArea`
+
+### 問題2：公設比顯示45.31%
+**原因**：使用總公設(22.80)而非扣除車位後的公設(12.44)
+**解法**：使用 `areas.commonAreasWithoutParking`
+
+### 問題3：總價不等於2800
+**原因**：單價計算錯誤或面積計算錯誤
+**解法**：確認單價64.56，建物面積39.96
