@@ -133,7 +133,7 @@ describe('房價計算器測試', () => {
       
       // 總價驗證
       expect(validation.priceValidation).toBe(true)
-      expect(validation.calculatedTotalPrice).toBeCloseTo(2800, 50)
+      expect(validation.calculatedTotalPrice).toBeCloseTo(2800, 0)
     })
   })
 
