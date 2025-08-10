@@ -1,7 +1,7 @@
 {
   "name": "home-price-cal",
   "version": "1.0.0",
-  "description": "基本資料 面積(坪)\t總價(萬元)\t單價(萬元/坪) 50.31\t2,800\t64.59 土地資料 土地位置\t土地移轉面積\t使用分區或編定 金龍段233地號\t7.01坪 持分移轉(1580/100000)\t都市：第二種住宅區 「本網站提供之都市地區土地使用分區資訊僅供參考，如有疑義，仍應以各直轄市、縣(市)政府都市計畫機關審認結果為準」 建物資料 屋齡\t建物 移轉面積\t持分\t主要用途\t主要建材\t建築 完成年月\t總樓層數\t建物分層 6\t27.51坪\t主建物\t23.43坪\t全筆移轉\t集合住宅\t鋼筋混凝土構造\t108/04\t十四層\t三層,陽台,雨遮 陽台\t2.81坪 雨遮\t1.28坪 6\t18.93坪\t\t本共同使用部分之項目有：管委會使用空間、戶外安全梯、排煙室、梯廳、陽台、雨遮、機房、消防水箱、水箱、防空避難室兼停車空間、電信機房、台電配電場所發電機房、垃圾儲藏空間、停車空間、消防機房等１６項。\t鋼筋混凝土構造\t108/04\t十四層 6\t3.87坪\t\t本共同使用部分之項目有：戶外安全梯、排煙室、梯廳、陽台等４項\t鋼筋混凝土構造\t108/04\t十四層 主建物面積占建物移轉總面積之比例：46.56% 主建物面積占建物移轉總面積（扣除車位面積）之比例：58.64% 車位資料 序號\t車位類別\t車位價格\t車位面積\t所在樓層 01\t坡道平面\t2,200,000元\t10.36坪\t地下四樓",
+  "description": "Taiwan Real Estate Price Calculator - 台灣房價計算器",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -9,8 +9,11 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
+  "homepage": "https://tsesc.github.io/home-price-cal",
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -23,6 +26,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
+    "gh-pages": "^6.3.0",
     "jsdom": "^26.1.0",
     "vitest": "^3.2.4"
   }
