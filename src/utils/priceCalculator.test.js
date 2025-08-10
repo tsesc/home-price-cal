@@ -14,7 +14,7 @@ describe('房價計算器測試', () => {
     commonArea1: 18.93,
     commonArea2: 3.87,
     parkingArea: 10.36,
-    unitPrice: 51.28,
+    unitPrice: 64.56,
     parkingPrice: 220,
     floorPremium: 1.0,
     agePremium: 1.0,
@@ -37,17 +37,19 @@ describe('房價計算器測試', () => {
 
     it('應正確計算建物總面積（不含車位）', () => {
       const areas = calculateAreas(mockParams)
-      // 建物總面積 = 主建物 + 陽台 + 雨遮 + 公設
-      const expected = 23.43 + 2.81 + 1.28 + 18.93 + 3.87
+      // 建物總面積 = 主建物 + 陽台 + 雨遮 + 公設（不含車位）
+      // 公設不含車位 = 18.93 + 3.87 - 10.36 = 12.44
+      const commonWithoutParking = 12.44
+      const expected = 23.43 + 2.81 + 1.28 + commonWithoutParking
       expect(areas.buildingTotalArea).toBeCloseTo(expected, 2)
-      expect(areas.buildingTotalArea).toBeCloseTo(50.32, 2)
+      expect(areas.buildingTotalArea).toBeCloseTo(39.96, 2)
     })
 
     it('應正確計算總面積（含車位）', () => {
       const areas = calculateAreas(mockParams)
-      const expected = 50.32 + 10.36
+      const expected = 39.96 + 10.36
       expect(areas.totalAreaWithParking).toBeCloseTo(expected, 2)
-      expect(areas.totalAreaWithParking).toBeCloseTo(60.68, 2)
+      expect(areas.totalAreaWithParking).toBeCloseTo(50.32, 2)
     })
   })
 
@@ -92,7 +94,8 @@ describe('房價計算器測試', () => {
       const areas = calculateAreas(mockParams)
       const expected = (mockParams.mainBuildingArea / areas.totalAreaWithParking) * 100
       expect(ratios.mainBuildingRatio).toBeCloseTo(expected, 1)
-      expect(ratios.mainBuildingRatio).toBeCloseTo(38.61, 1)
+      // 23.43 / 50.32 = 46.56%
+      expect(ratios.mainBuildingRatio).toBeCloseTo(46.56, 1)
     })
 
     it('應正確計算主建物占比（不含車位）', () => {
@@ -100,17 +103,16 @@ describe('房價計算器測試', () => {
       const areas = calculateAreas(mockParams)
       const expected = (mockParams.mainBuildingArea / areas.buildingTotalArea) * 100
       expect(ratios.mainBuildingRatioWithoutParking).toBeCloseTo(expected, 1)
-      // 根據實際資料：主建物面積占建物移轉總面積（扣除車位面積）之比例：58.64%
-      // 但我們的計算是 23.43 / 50.32 = 46.56%
-      expect(ratios.mainBuildingRatioWithoutParking).toBeCloseTo(46.56, 1)
+      // 23.43 / 39.96 = 58.64%
+      expect(ratios.mainBuildingRatioWithoutParking).toBeCloseTo(58.64, 1)
     })
 
     it('應正確計算公設比', () => {
       const ratios = calculateRatios(mockParams)
       const areas = calculateAreas(mockParams)
-      const expected = (areas.commonAreas / areas.buildingTotalArea) * 100
+      const expected = (areas.commonAreasWithoutParking / areas.buildingTotalArea) * 100
       expect(ratios.publicFacilityRatio).toBeCloseTo(expected, 1)
-      expect(ratios.publicFacilityRatio).toBeCloseTo(45.31, 1)
+      expect(ratios.publicFacilityRatio).toBeCloseTo(31.13, 1)
     })
 
     it('應正確計算附屬建物比例', () => {
@@ -119,7 +121,8 @@ describe('房價計算器測試', () => {
       const attachmentArea = mockParams.balconyArea + mockParams.canopyArea
       const expected = (attachmentArea / areas.buildingTotalArea) * 100
       expect(ratios.attachmentRatio).toBeCloseTo(expected, 1)
-      expect(ratios.attachmentRatio).toBeCloseTo(8.13, 1)
+      // 4.09 / 39.96 = 10.24%
+      expect(ratios.attachmentRatio).toBeCloseTo(10.24, 1)
     })
   })
 
@@ -129,7 +132,7 @@ describe('房價計算器測試', () => {
       
       // 面積驗證
       expect(validation.areaValidation).toBe(true)
-      expect(validation.actualBuildingArea).toBeCloseTo(50.31, 1)
+      expect(validation.actualBuildingArea).toBeCloseTo(39.96, 1)
       
       // 總價驗證
       expect(validation.priceValidation).toBe(true)

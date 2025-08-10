@@ -3,7 +3,7 @@ import './App.css'
 import { calculateAreas, calculatePrices, calculateRatios } from './utils/priceCalculator'
 
 function App() {
-  const [parameters, setParameters] = useState({
+  const initialParams = {
     mainBuildingArea: 23.43,
     balconyArea: 2.81,
     canopyArea: 1.28,
@@ -19,11 +19,14 @@ function App() {
     buildingAge: 6,
     floorPremium: 1,
     agePremium: 1,
-  })
-
-  const [areas, setAreas] = useState({})
-  const [prices, setPrices] = useState({})
-  const [ratios, setRatios] = useState({})
+  }
+  
+  const [parameters, setParameters] = useState(initialParams)
+  
+  // 初始化時就計算，避免空物件問題
+  const [areas, setAreas] = useState(() => calculateAreas(initialParams))
+  const [prices, setPrices] = useState(() => calculatePrices(initialParams))
+  const [ratios, setRatios] = useState(() => calculateRatios(initialParams))
 
   useEffect(() => {
     const calculatedAreas = calculateAreas(parameters)
@@ -148,8 +151,8 @@ function App() {
                 value={parameters.floorPremium}
                 onChange={(e) => handleParameterChange('floorPremium', e.target.value)}
                 step="0.01"
-                min="0.9"
-                max="1.2"
+                min="0.8"
+                max="1.3"
               />
             </div>
             <div className="parameter">
@@ -159,8 +162,8 @@ function App() {
                 value={parameters.agePremium}
                 onChange={(e) => handleParameterChange('agePremium', e.target.value)}
                 step="0.01"
-                min="0.8"
-                max="1"
+                min="0.7"
+                max="1.1"
               />
             </div>
             <div className="parameter">
@@ -169,7 +172,7 @@ function App() {
                 type="number"
                 value={parameters.buildingAge}
                 onChange={(e) => handleParameterChange('buildingAge', e.target.value)}
-                step="1"
+                step="0.1"
               />
             </div>
             <div className="parameter">
@@ -178,7 +181,7 @@ function App() {
                 type="number"
                 value={parameters.currentFloor}
                 onChange={(e) => handleParameterChange('currentFloor', e.target.value)}
-                step="1"
+                step="0.5"
               />
             </div>
             <div className="parameter">
@@ -187,7 +190,7 @@ function App() {
                 type="number"
                 value={parameters.floors}
                 onChange={(e) => handleParameterChange('floors', e.target.value)}
-                step="1"
+                step="0.5"
               />
             </div>
           </div>
@@ -199,9 +202,10 @@ function App() {
           <div className="formula-display">
             <h3>計算公式</h3>
             <div className="formula">
-              <p><strong>建物總面積（不含車位）</strong> = 主建物 + 陽台 + 雨遮 + 共同使用部分1 + 共同使用部分2</p>
-              <p className="calculation">= {parameters.mainBuildingArea} + {parameters.balconyArea} + {parameters.canopyArea} + {parameters.commonArea1} + {parameters.commonArea2}</p>
-              <p className="result">= {areas.buildingTotalArea?.toFixed(2)} 坪</p>
+              <p><strong>建物總面積（不含車位）</strong> = 主建物 + 陽台 + 雨遮 + 共同使用部分（不含車位）</p>
+              <p className="calculation">= {parameters.mainBuildingArea} + {parameters.balconyArea} + {parameters.canopyArea} + {areas.commonAreasWithoutParking?.toFixed(2)}</p>
+              <p className="calculation">= {parameters.mainBuildingArea} + {parameters.balconyArea} + {parameters.canopyArea} + ({parameters.commonArea1} + {parameters.commonArea2} - {parameters.parkingArea})</p>
+              <p className="result">= {parameters.mainBuildingArea} + {parameters.balconyArea} + {parameters.canopyArea} + {areas.commonAreasWithoutParking?.toFixed(2)} = {areas.buildingTotalArea?.toFixed(2)} 坪</p>
             </div>
             
             <div className="formula">
@@ -211,16 +215,15 @@ function App() {
             </div>
             
             <div className="formula">
-              <p><strong>建物價格</strong> = (建物總面積 - 車位面積) × 單價 × 樓層溢價係數 × 屋齡折舊係數</p>
-              <p className="calculation">= ({areas.buildingTotalArea?.toFixed(2)} - {parameters.parkingArea}) × {parameters.unitPrice} × {parameters.floorPremium} × {parameters.agePremium}</p>
-              <p className="result">= {prices.buildingAreaWithoutParking?.toFixed(2)} × {parameters.unitPrice} × {parameters.floorPremium} × {parameters.agePremium}</p>
-              <p className="result">= {prices.adjustedBuildingPrice?.toFixed(0)} 萬元</p>
+              <p><strong>建物價格</strong> = 建物面積（不含車位）× 單價 × 樓層溢價係數 × 屋齡折舊係數</p>
+              <p className="calculation">= {areas.buildingTotalArea?.toFixed(2)} × {parameters.unitPrice} × {parameters.floorPremium} × {parameters.agePremium}</p>
+              <p className="result">= {prices.baseBuildingPrice?.toFixed(2)} × {parameters.floorPremium} × {parameters.agePremium} = {prices.adjustedBuildingPrice?.toFixed(2)} 萬元</p>
             </div>
             
             <div className="formula">
               <p><strong>房屋總價</strong> = 建物價格 + 車位價格</p>
-              <p className="calculation">= {prices.adjustedBuildingPrice?.toFixed(0)} + {parameters.parkingPrice}</p>
-              <p className="result">= {prices.totalPrice?.toFixed(0)} 萬元</p>
+              <p className="calculation">= {prices.adjustedBuildingPrice?.toFixed(2)} + {parameters.parkingPrice}</p>
+              <p className="result">= {(parseFloat(prices.adjustedBuildingPrice) + parseFloat(parameters.parkingPrice)).toFixed(2)} 萬元</p>
             </div>
           </div>
 
@@ -254,21 +257,51 @@ function App() {
 
           <div className="ratio-display">
             <h3>面積比例分析</h3>
+            
+            <div className="formula-box">
+              <h4>公設比計算</h4>
+              <p className="formula-text">
+                公設比 = 共有部分（不含車位）÷ 建物總面積（不含車位）× 100%
+              </p>
+              <p className="calculation-text">
+                = {areas.commonAreasWithoutParking?.toFixed(2)} ÷ {areas.buildingTotalArea?.toFixed(2)} × 100%
+              </p>
+              <p className="result-text">
+                = <strong>{ratios.publicFacilityRatio?.toFixed(2)}%</strong>
+              </p>
+            </div>
+
+            <div className="formula-box">
+              <h4>得房率計算</h4>
+              <p className="formula-text">
+                得房率 = (主建物 + 陽台 + 雨遮) ÷ 建物總面積（不含車位）× 100%
+              </p>
+              <p className="calculation-text">
+                = ({parameters.mainBuildingArea} + {parameters.balconyArea} + {parameters.canopyArea}) ÷ {areas.buildingTotalArea?.toFixed(2)} × 100%
+              </p>
+              <p className="calculation-text">
+                = {(parameters.mainBuildingArea + parameters.balconyArea + parameters.canopyArea).toFixed(2)} ÷ {areas.buildingTotalArea?.toFixed(2)} × 100%
+              </p>
+              <p className="result-text">
+                = <strong>{ratios.usableAreaRatio?.toFixed(2)}%</strong>
+              </p>
+            </div>
+
+            <div className="ratio-item special">
+              <span>實際室內空間（主建物）</span>
+              <span className="value">{ratios.actualUsageRatio?.toFixed(1)}%</span>
+            </div>
             <div className="ratio-item">
-              <span>主建物占比（含車位）</span>
+              <span>附屬建物比例（陽台+雨遮）</span>
+              <span className="value">{ratios.attachmentRatio?.toFixed(1)}%</span>
+            </div>
+            <div className="ratio-item">
+              <span>主建物占總面積（含車位）</span>
               <span className="value">{ratios.mainBuildingRatio?.toFixed(1)}%</span>
             </div>
             <div className="ratio-item">
-              <span>主建物占比（不含車位）</span>
-              <span className="value">{ratios.mainBuildingRatioWithoutParking?.toFixed(1)}%</span>
-            </div>
-            <div className="ratio-item">
-              <span>公設比</span>
-              <span className="value">{ratios.publicFacilityRatio?.toFixed(1)}%</span>
-            </div>
-            <div className="ratio-item">
-              <span>附屬建物比例</span>
-              <span className="value">{ratios.attachmentRatio?.toFixed(1)}%</span>
+              <span>共同使用部分（不含車位）</span>
+              <span className="value">{areas.commonAreasWithoutParking?.toFixed(2)} 坪</span>
             </div>
           </div>
         </div>

@@ -9,13 +9,27 @@
 
 export const calculateAreas = (params) => {
   const mainBuildingWithAttachments = params.mainBuildingArea + params.balconyArea + params.canopyArea
-  const commonAreas = params.commonArea1 + params.commonArea2
-  const buildingTotalArea = mainBuildingWithAttachments + commonAreas
+  
+  // 共同使用部分需要扣除包含在內的車位面積
+  // commonArea1 (18.93) 包含了車位的公設部分
+  // 實際公設 = commonArea1 + commonArea2 - 車位中的公設部分
+  const totalCommonWithParking = params.commonArea1 + params.commonArea2
+  
+  // 計算實際不含車位的公設
+  // 根據實價登錄，真實公設應該是 12.44坪
+  const parkingInCommon = totalCommonWithParking - 12.44 // 應該等於 10.36
+  const commonAreasWithoutParking = totalCommonWithParking - params.parkingArea
+  
+  // 建物總面積（不含車位）
+  const buildingTotalArea = params.mainBuildingArea + params.balconyArea + params.canopyArea + commonAreasWithoutParking
+  
+  // 總面積（含車位）
   const totalAreaWithParking = buildingTotalArea + params.parkingArea
   
   return {
     mainBuildingWithAttachments,
-    commonAreas,
+    commonAreas: totalCommonWithParking,
+    commonAreasWithoutParking,
     buildingTotalArea,
     totalAreaWithParking,
   }
@@ -24,10 +38,9 @@ export const calculateAreas = (params) => {
 export const calculatePrices = (params) => {
   const areas = calculateAreas(params)
   
-  // 實價登錄的單價計算方式：單價是針對建物面積（不含車位）
-  // 基礎建物價格 = (建物總面積 - 車位面積) × 單價
-  const buildingAreaWithoutParking = areas.buildingTotalArea - params.parkingArea
-  const baseBuildingPrice = buildingAreaWithoutParking * params.unitPrice
+  // 建物面積（不含車位）- 已經在 calculateAreas 中計算好了
+  // areas.buildingTotalArea 本身就是不含車位的面積
+  const baseBuildingPrice = areas.buildingTotalArea * params.unitPrice
   
   // 調整後建物價格 = 基礎價格 × 樓層係數 × 屋齡係數
   const adjustedBuildingPrice = baseBuildingPrice * params.floorPremium * params.agePremium
@@ -35,38 +48,50 @@ export const calculatePrices = (params) => {
   // 總價 = 調整後建物價格 + 車位價格
   const totalPrice = adjustedBuildingPrice + params.parkingPrice
   
-  // 實際單價（回推）= 建物價格 / (建物總面積 - 車位面積)
-  const actualUnitPrice = adjustedBuildingPrice / buildingAreaWithoutParking
+  // 實際單價（回推）= 建物價格 / 建物總面積（不含車位）
+  const actualUnitPrice = adjustedBuildingPrice / areas.buildingTotalArea
   
   return {
     baseBuildingPrice,
     adjustedBuildingPrice,
     totalPrice,
     actualUnitPrice,
-    buildingAreaWithoutParking,
   }
 }
 
 export const calculateRatios = (params) => {
   const areas = calculateAreas(params)
   
-  // 主建物占建物總面積比例
+  // 附屬建物總面積（陽台 + 雨遮）
+  const attachmentArea = params.balconyArea + params.canopyArea
+  
+  // 主建物占總面積比例（含車位）
   const mainBuildingRatio = (params.mainBuildingArea / areas.totalAreaWithParking) * 100
   
-  // 主建物占建物總面積比例（扣除車位）
+  // 主建物占建物總面積比例（不含車位）
   const mainBuildingRatioWithoutParking = (params.mainBuildingArea / areas.buildingTotalArea) * 100
   
-  // 公設比 = 公共設施面積 / 建物總面積（不含車位）
-  const publicFacilityRatio = (areas.commonAreas / areas.buildingTotalArea) * 100
+  // 公設比（標準計算）= 共有部分（不含車位） ÷ 建物總面積（不含車位）
+  // 使用真實的不含車位公設面積
+  const publicFacilityRatio = (areas.commonAreasWithoutParking / areas.buildingTotalArea) * 100
   
   // 附屬建物比例 = (陽台 + 雨遮) / 建物總面積（不含車位）
-  const attachmentRatio = ((params.balconyArea + params.canopyArea) / areas.buildingTotalArea) * 100
+  const attachmentRatio = (attachmentArea / areas.buildingTotalArea) * 100
+  
+  // 實際室內使用比例（主建物占比）
+  const actualUsageRatio = (params.mainBuildingArea / areas.buildingTotalArea) * 100
+  
+  // 得房率（實際可用面積比例）= (主建物 + 附屬建物) / 建物總面積
+  const usableAreaRatio = ((params.mainBuildingArea + attachmentArea) / areas.buildingTotalArea) * 100
   
   return {
     mainBuildingRatio,
     mainBuildingRatioWithoutParking,
     publicFacilityRatio,
     attachmentRatio,
+    actualUsageRatio,
+    attachmentArea,
+    usableAreaRatio,
   }
 }
 
@@ -86,7 +111,7 @@ export const validateWithActualData = () => {
   }
   
   const areas = calculateAreas(actualData)
-  const expectedBuildingArea = 50.31 // 實際資料顯示的建物總面積
+  const expectedBuildingArea = 39.96 // 建物總面積（不含車位）
   const actualBuildingArea = Math.round(areas.buildingTotalArea * 100) / 100
   
   // 驗證面積計算

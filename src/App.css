@@ -161,11 +161,72 @@ h3 {
   justify-content: space-between;
   padding: 10px 0;
   color: #333;
+  border-bottom: 1px solid #ffe0b2;
+}
+
+.ratio-item:last-child {
+  border-bottom: none;
+}
+
+.ratio-item.special {
+  background: #fff8e1;
+  padding: 12px 10px;
+  margin: 10px -10px;
+  border-radius: 5px;
+  font-weight: bold;
+  border: 2px solid #ffb74d;
 }
 
 .ratio-item .value {
   font-weight: bold;
   color: #ff6f00;
+}
+
+.formula-box {
+  background: linear-gradient(135deg, #fff8e1 0%, #fff3e0 100%);
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 10px;
+  border: 2px solid #ffb74d;
+}
+
+.formula-box h4 {
+  color: #f57c00;
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #ffb74d;
+  padding-bottom: 8px;
+}
+
+.formula-text {
+  color: #555;
+  font-size: 0.95rem;
+  margin: 8px 0;
+  background: white;
+  padding: 10px;
+  border-radius: 5px;
+  font-family: 'Courier New', monospace;
+}
+
+.calculation-text {
+  color: #666;
+  font-size: 0.95rem;
+  margin: 8px 0;
+  margin-left: 20px;
+  font-family: 'Courier New', monospace;
+}
+
+.result-text {
+  color: #ff6f00;
+  font-size: 1.2rem;
+  margin: 12px 0;
+  margin-left: 20px;
+  font-weight: bold;
+}
+
+.result-text strong {
+  font-size: 1.4rem;
+  color: #e65100;
 }
 
 @media (max-width: 1024px) {

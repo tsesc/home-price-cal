@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-房價計算器 (Home Price Calculator) - 用於計算台灣房地產實價的React應用程式，基於實價登錄資料建立精確的計算模型。
+房價計算器 (Home Price Calculator) - 基於台灣實價登錄資料的React應用程式，提供精確的房地產價格計算和面積比例分析。
 
 ## Development Commands
 
@@ -15,7 +15,7 @@ npm run dev
 # Run all tests
 npm test
 
-# Run tests with UI
+# Run tests with UI  
 npm test:ui
 
 # Run tests with coverage
@@ -30,59 +30,53 @@ npm run preview
 
 ## Core Calculation Logic
 
-位於 `src/utils/priceCalculator.js`，包含三個核心計算函數：
+核心計算邏輯位於 `src/utils/priceCalculator.js`：
 
-### 1. calculateAreas - 面積計算
-- 建物總面積（不含車位）= 主建物 + 陽台 + 雨遮 + 公設1 + 公設2
-- 總面積（含車位）= 建物總面積 + 車位面積
+### calculateAreas - 面積計算
+關鍵點：共同使用部分需扣除車位面積
+- `commonAreasWithoutParking = (commonArea1 + commonArea2) - parkingArea`
+- `buildingTotalArea = 主建物 + 陽台 + 雨遮 + commonAreasWithoutParking`
+- 實際數據：建物總面積 39.96坪（不含車位），總面積 50.32坪（含車位）
 
-### 2. calculatePrices - 價格計算
-- 基礎建物價格 = 建物總面積 × 單價
-- 調整後建物價格 = 基礎價格 × 樓層溢價係數 × 屋齡折舊係數
-- 總價 = 調整後建物價格 + 車位價格
+### calculatePrices - 價格計算  
+- `baseBuildingPrice = buildingTotalArea × unitPrice`
+- `adjustedBuildingPrice = baseBuildingPrice × floorPremium × agePremium`
+- `totalPrice = adjustedBuildingPrice + parkingPrice`
+- 注意：單價是針對不含車位的建物面積
 
-### 3. calculateRatios - 比例分析
-- 主建物占比（含/不含車位）
-- 公設比 = 公共設施面積 ÷ 建物總面積 × 100%
-- 附屬建物比例 = (陽台 + 雨遮) ÷ 建物總面積 × 100%
+### calculateRatios - 比例分析
+- **公設比 = 12.44 ÷ 39.96 = 31.13%**（台灣標準計算）
+- **得房率 = 27.52 ÷ 39.96 = 68.87%**（主建物+附屬建物）
+- 主建物占比 = 23.43 ÷ 39.96 = 58.64%
 
-## Important Data Validation
+## Critical Data Points
 
-基於實價登錄的驗證數據（README.md）：
-- 總價：2,800萬元
-- 車位價格：220萬元（10.36坪）
-- 建物總面積（含車位）：50.32坪（實際計算值）
-- 建物面積（不含車位）：39.96坪
-- **使用單價：64.56萬元/坪**（確保總價精確為2800）
-- **實價登錄顯示：64.59萬元/坪**（可能有四捨五入）
+基於實價登錄的關鍵數據：
+- **共同使用部分原始數據**：18.93 + 3.87 = 22.80坪（包含車位）
+- **共同使用部分（不含車位）**：22.80 - 10.36 = 12.44坪
+- **建物總面積（不含車位）**：23.43 + 2.81 + 1.28 + 12.44 = 39.96坪
+- **單價**：(2800 - 220) ÷ 39.96 = 64.56萬元/坪
 
-計算驗證：
-- 精確單價：2580 ÷ 39.96 = 64.5646萬元/坪
-- 總價驗證：39.96 × 64.56 + 220 ≈ 2800萬元 ✓
+## UI Implementation Notes
 
-## Key Implementation Details
+### 公式顯示
+- 公設比和得房率需顯示完整計算式（見 `App.jsx` 中的 `formula-box` 組件）
+- 建物總面積計算需明確顯示共同使用部分的扣除過程
 
-1. **狀態管理**：使用React hooks管理參數狀態，所有計算即時更新
-2. **測試覆蓋**：包含18個單元測試，涵蓋面積、價格、比例計算及邊界條件
-3. **調整係數**：
-   - 樓層溢價係數範圍：0.9-1.2
-   - 屋齡折舊係數範圍：0.8-1.0
+### 狀態初始化
+- 使用 lazy initialization 避免初始渲染時的空物件問題
+- `useState(() => calculateAreas(initialParams))`
 
-## Architecture
+## Test Coverage
 
-```
-src/
-├── App.jsx           # 主要UI組件，包含參數輸入和結果顯示
-├── utils/
-│   ├── priceCalculator.js      # 核心計算邏輯
-│   └── priceCalculator.test.js # 單元測試
-└── test/
-    └── setup.js      # 測試環境配置
-```
+18個單元測試涵蓋：
+- 面積計算（特別注意公設扣除車位的邏輯）
+- 價格計算（驗證總價 ≈ 2800萬）
+- 比例計算（公設比應為31.13%，非45.31%）
+- 邊界條件（零值、極端係數、無車位情況）
 
-## Critical Formulas
+## Common Issues & Solutions
 
-實價登錄資料中的關鍵比例：
-- 主建物面積占建物移轉總面積：46.56%
-- 主建物面積占建物移轉總面積（扣除車位）：58.64%
-- 公設比：約45.31%
+1. **公設比計算錯誤**：確保使用 `commonAreasWithoutParking` (12.44) 而非總公設 (22.80)
+2. **建物價格顯示錯誤**：檢查是否重複扣除車位面積（29.60 × 64.56 = 1910.98 是錯誤的）
+3. **總價不等於2800**：確認單價為 64.56 萬元/坪
