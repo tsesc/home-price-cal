@@ -10,7 +10,7 @@ function App() {
     commonArea1: 18.93,
     commonArea2: 3.87,
     parkingArea: 10.36,
-    unitPrice: 51.28,
+    unitPrice: 64.56,
     parkingPrice: 220,
     landArea: 7.01,
     landShareRatio: 1580 / 100000,
@@ -211,8 +211,9 @@ function App() {
             </div>
             
             <div className="formula">
-              <p><strong>建物價格</strong> = 建物總面積 × 單價 × 樓層溢價係數 × 屋齡折舊係數</p>
-              <p className="calculation">= {areas.buildingTotalArea?.toFixed(2)} × {parameters.unitPrice} × {parameters.floorPremium} × {parameters.agePremium}</p>
+              <p><strong>建物價格</strong> = (建物總面積 - 車位面積) × 單價 × 樓層溢價係數 × 屋齡折舊係數</p>
+              <p className="calculation">= ({areas.buildingTotalArea?.toFixed(2)} - {parameters.parkingArea}) × {parameters.unitPrice} × {parameters.floorPremium} × {parameters.agePremium}</p>
+              <p className="result">= {prices.buildingAreaWithoutParking?.toFixed(2)} × {parameters.unitPrice} × {parameters.floorPremium} × {parameters.agePremium}</p>
               <p className="result">= {prices.adjustedBuildingPrice?.toFixed(0)} 萬元</p>
             </div>
             
@@ -246,7 +247,7 @@ function App() {
               <span className="value">{prices.totalPrice?.toFixed(0)} 萬元</span>
             </div>
             <div className="summary-item">
-              <span>實際單價</span>
+              <span>實際單價（不含車位）</span>
               <span className="value">{prices.actualUnitPrice?.toFixed(2)} 萬元/坪</span>
             </div>
           </div>

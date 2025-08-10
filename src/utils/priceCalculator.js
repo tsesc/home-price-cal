@@ -24,8 +24,10 @@ export const calculateAreas = (params) => {
 export const calculatePrices = (params) => {
   const areas = calculateAreas(params)
   
-  // 基礎建物價格 = 建物總面積 × 單價
-  const baseBuildingPrice = areas.buildingTotalArea * params.unitPrice
+  // 實價登錄的單價計算方式：單價是針對建物面積（不含車位）
+  // 基礎建物價格 = (建物總面積 - 車位面積) × 單價
+  const buildingAreaWithoutParking = areas.buildingTotalArea - params.parkingArea
+  const baseBuildingPrice = buildingAreaWithoutParking * params.unitPrice
   
   // 調整後建物價格 = 基礎價格 × 樓層係數 × 屋齡係數
   const adjustedBuildingPrice = baseBuildingPrice * params.floorPremium * params.agePremium
@@ -33,14 +35,15 @@ export const calculatePrices = (params) => {
   // 總價 = 調整後建物價格 + 車位價格
   const totalPrice = adjustedBuildingPrice + params.parkingPrice
   
-  // 實際單價（回推）= 建物價格 / 建物總面積
-  const actualUnitPrice = adjustedBuildingPrice / areas.buildingTotalArea
+  // 實際單價（回推）= 建物價格 / (建物總面積 - 車位面積)
+  const actualUnitPrice = adjustedBuildingPrice / buildingAreaWithoutParking
   
   return {
     baseBuildingPrice,
     adjustedBuildingPrice,
     totalPrice,
     actualUnitPrice,
+    buildingAreaWithoutParking,
   }
 }
 
@@ -76,7 +79,7 @@ export const validateWithActualData = () => {
     commonArea1: 18.93,
     commonArea2: 3.87,
     parkingArea: 10.36,
-    unitPrice: 51.28, // 修正：(2800-220)/50.31 ≈ 51.28
+    unitPrice: 64.56, // 精確單價：(2800-220)/(50.32-10.36) = 2580/39.96 ≈ 64.5646
     parkingPrice: 220,
     floorPremium: 1.0,
     agePremium: 1.0,
