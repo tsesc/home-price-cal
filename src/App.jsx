@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import './App.css'
 import { calculateAreas, calculatePrices, calculateRatios } from './utils/priceCalculator'
+import ImportDialog from './components/ImportDialog'
 
 function App() {
   const initialParams = {
@@ -22,6 +23,7 @@ function App() {
   }
   
   const [parameters, setParameters] = useState(initialParams)
+  const [showImportDialog, setShowImportDialog] = useState(false)
   
   // 初始化時就計算，避免空物件問題
   const [areas, setAreas] = useState(() => calculateAreas(initialParams))
@@ -45,6 +47,24 @@ function App() {
     }))
   }
 
+  const handleImportApply = (data) => {
+    setParameters(prev => ({
+      ...prev,
+      mainBuildingArea: data.mainBuildingArea,
+      balconyArea: data.balconyArea,
+      canopyArea: data.canopyArea,
+      commonArea1: data.commonArea1,
+      commonArea2: data.commonArea2,
+      parkingArea: data.parkingArea,
+      parkingPrice: data.parkingPrice,
+      unitPrice: data.unitPrice,
+      landArea: data.landArea,
+      currentFloor: data.currentFloor,
+      floors: data.floors,
+    }))
+    setShowImportDialog(false)
+  }
+
   return (
     <div className="container">
       <h1>房價計算器</h1>
@@ -52,6 +72,9 @@ function App() {
       <div className="calculator-wrapper">
         <div className="parameters-section">
           <h2>參數調整</h2>
+          <button className="import-btn" onClick={() => setShowImportDialog(true)}>
+            從實價登錄匯入
+          </button>
           
           <div className="parameter-group">
             <h3>建物面積（坪）</h3>
@@ -306,6 +329,13 @@ function App() {
           </div>
         </div>
       </div>
+
+      {showImportDialog && (
+        <ImportDialog
+          onApply={handleImportApply}
+          onClose={() => setShowImportDialog(false)}
+        />
+      )}
     </div>
   )
 }
