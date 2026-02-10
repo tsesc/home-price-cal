@@ -1,6 +1,6 @@
 {
   "name": "home-price-cal",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Taiwan Real Estate Price Calculator - 台灣房價計算器",
   "main": "index.js",
   "scripts": {

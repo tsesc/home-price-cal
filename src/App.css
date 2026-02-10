@@ -630,8 +630,8 @@ h3 {
   background: rgba(220, 50, 50, 0.8);
 }
 
-/* Print Report */
-.print-overlay {
+/* Print Report - Screen Display */
+.print-backdrop {
   position: fixed;
   top: 0;
   left: 0;
@@ -639,12 +639,20 @@ h3 {
   bottom: 0;
   background: rgba(0, 0, 0, 0.6);
   z-index: 2000;
+}
+
+.print-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2001;
   overflow-y: auto;
-  overflow-x: hidden;
   padding: 20px;
 }
 
-.print-report {
+.print-content {
   background: white;
   max-width: 800px;
   margin: 0 auto;
@@ -806,46 +814,52 @@ h3 {
 }
 
 @media print {
-  /* 隱藏主要內容 */
-  .container {
+  /* 隱藏所有非列印內容 */
+  body > *:not(.print-modal) {
     display: none !important;
   }
 
-  /* 顯示列印報告 */
-  .print-overlay {
-    display: block !important;
+  .print-backdrop {
+    display: none !important;
+  }
+
+  .print-modal {
     position: static !important;
-    background: white !important;
-    padding: 0 !important;
     overflow: visible !important;
+    padding: 0 !important;
   }
 
-  .print-report {
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 15mm !important;
-    max-width: none !important;
-    margin: 0 !important;
-  }
-
-  /* 隱藏工具列 */
-  .no-print,
   .print-toolbar {
     display: none !important;
+  }
+
+  .print-content {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
 
   /* 避免分頁切斷 */
   .print-section {
     page-break-inside: avoid;
     break-inside: avoid;
+    margin-bottom: 16px;
   }
 
   .print-title-section {
     page-break-after: avoid;
     break-after: avoid;
+    margin-bottom: 20px;
   }
 
   /* 表格樣式 */
+  .print-table {
+    width: 100%;
+    font-size: 10pt;
+  }
+
   .print-table-bordered {
     border: 1px solid #333;
   }
@@ -853,11 +867,21 @@ h3 {
   .print-table-bordered td,
   .print-table-bordered th {
     border: 1px solid #666;
+    padding: 6px 8px;
+  }
+
+  .print-table-bordered th {
+    background: #f5f5f5 !important;
   }
 
   /* 地圖圖片 */
+  .print-map-image {
+    page-break-inside: avoid;
+  }
+
   .print-map-image img {
-    max-height: 400px;
+    max-width: 100%;
+    max-height: 500px;
     object-fit: contain;
   }
 
@@ -867,9 +891,26 @@ h3 {
     margin: 15mm;
   }
 
-  /* 確保內容可見 */
+  /* 確保顏色和背景列印 */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* 標題 */
+  .print-main-title {
+    font-size: 18pt;
+    margin-bottom: 8px;
+  }
+
+  .print-address {
+    font-size: 12pt;
+    margin-bottom: 8px;
+  }
+
+  .print-section-title {
+    font-size: 12pt;
+    margin-bottom: 8px;
   }
 }
