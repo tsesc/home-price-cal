@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { parsePrintPageText } from '../utils/printPageParser'
 
 const metaLabels = {
@@ -34,6 +34,19 @@ const fieldLabels = {
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
 
+function readImageFile(file) {
+  return new Promise((resolve, reject) => {
+    if (file.size > MAX_IMAGE_SIZE) {
+      reject(new Error('圖片大小不能超過 2MB'))
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target.result)
+    reader.onerror = () => reject(new Error('讀取圖片失敗'))
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function ImportDialog({ onApply, onClose }) {
   const [rawText, setRawText] = useState('')
   const [parsedData, setParsedData] = useState(null)
@@ -41,6 +54,35 @@ export default function ImportDialog({ onApply, onClose }) {
   const [mapImageDataUrl, setMapImageDataUrl] = useState(null)
   const [imageError, setImageError] = useState('')
   const [error, setError] = useState('')
+
+  const handleImageFromFile = useCallback(async (file) => {
+    if (!file || !file.type.startsWith('image/')) return
+    try {
+      setImageError('')
+      const dataUrl = await readImageFile(file)
+      setMapImageDataUrl(dataUrl)
+    } catch (err) {
+      setImageError(err.message)
+      setMapImageDataUrl(null)
+    }
+  }, [])
+
+  // 全域 paste 事件：支援 Ctrl+V 貼上圖片
+  useEffect(() => {
+    const handlePaste = (e) => {
+      const items = e.clipboardData?.items
+      if (!items) return
+      for (const item of items) {
+        if (item.type.startsWith('image/')) {
+          e.preventDefault()
+          handleImageFromFile(item.getAsFile())
+          return
+        }
+      }
+    }
+    document.addEventListener('paste', handlePaste)
+    return () => document.removeEventListener('paste', handlePaste)
+  }, [handleImageFromFile])
 
   const handleParse = () => {
     const result = parsePrintPageText(rawText)
@@ -70,21 +112,12 @@ export default function ImportDialog({ onApply, onClose }) {
   }
 
   const handleImageUpload = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
+    handleImageFromFile(e.target.files[0])
+  }
 
-    if (file.size > MAX_IMAGE_SIZE) {
-      setImageError('圖片大小不能超過 2MB')
-      setMapImageDataUrl(null)
-      return
-    }
-
+  const handleRemoveImage = () => {
+    setMapImageDataUrl(null)
     setImageError('')
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      setMapImageDataUrl(event.target.result)
-    }
-    reader.readAsDataURL(file)
   }
 
   const handleApply = () => {
@@ -173,15 +206,24 @@ export default function ImportDialog({ onApply, onClose }) {
 
             <h4 className="import-section-title">地圖截圖（選填）</h4>
             <div className="import-image-upload">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-              />
+              <p className="import-image-hint">
+                在實價登錄頁面的地圖上按右鍵 → 複製圖片，然後回到這裡按 Ctrl+V 貼上
+              </p>
+              {!mapImageDataUrl && (
+                <div className="import-paste-zone">
+                  <span>Ctrl+V 貼上圖片，或選擇檔案上傳</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+              )}
               {imageError && <p className="import-error">{imageError}</p>}
               {mapImageDataUrl && (
                 <div className="import-image-preview">
                   <img src={mapImageDataUrl} alt="地圖截圖" />
+                  <button className="import-image-remove" onClick={handleRemoveImage}>移除圖片</button>
                 </div>
               )}
             </div>
