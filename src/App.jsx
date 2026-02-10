@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import './App.css'
 import { calculateAreas, calculatePrices, calculateRatios } from './utils/priceCalculator'
 import ImportDialog from './components/ImportDialog'
+import PrintReport from './components/PrintReport'
 
 function App() {
   const initialParams = {
@@ -24,6 +25,8 @@ function App() {
   
   const [parameters, setParameters] = useState(initialParams)
   const [showImportDialog, setShowImportDialog] = useState(false)
+  const [transactionData, setTransactionData] = useState(null)
+  const [showPrintReport, setShowPrintReport] = useState(false)
   
   // 初始化時就計算，避免空物件問題
   const [areas, setAreas] = useState(() => calculateAreas(initialParams))
@@ -47,7 +50,7 @@ function App() {
     }))
   }
 
-  const handleImportApply = (data) => {
+  const handleImportApply = ({ data, meta, mapImageDataUrl }) => {
     setParameters(prev => ({
       ...prev,
       mainBuildingArea: data.mainBuildingArea,
@@ -62,6 +65,7 @@ function App() {
       currentFloor: data.currentFloor,
       floors: data.floors,
     }))
+    setTransactionData({ ...meta, mapImageDataUrl })
     setShowImportDialog(false)
   }
 
@@ -74,6 +78,13 @@ function App() {
           <h2>參數調整</h2>
           <button className="import-btn" onClick={() => setShowImportDialog(true)}>
             從實價登錄匯入
+          </button>
+          <button
+            className="report-btn"
+            onClick={() => setShowPrintReport(true)}
+            disabled={!transactionData?.address}
+          >
+            產生報告
           </button>
           
           <div className="parameter-group">
@@ -334,6 +345,18 @@ function App() {
         <ImportDialog
           onApply={handleImportApply}
           onClose={() => setShowImportDialog(false)}
+        />
+      )}
+
+      {showPrintReport && (
+        <PrintReport
+          transactionData={transactionData}
+          parameters={parameters}
+          areas={areas}
+          prices={prices}
+          ratios={ratios}
+          onClose={() => setShowPrintReport(false)}
+          onPrint={() => window.print()}
         />
       )}
     </div>

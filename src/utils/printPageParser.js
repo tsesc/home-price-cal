@@ -139,5 +139,84 @@ export const parsePrintPageText = (text) => {
     result.parkingPrice = Math.round(result.parkingPrice / 10000)
   }
 
-  return { data: result }
+  // 8. 描述性欄位（meta）
+  const meta = {
+    address: '',
+    communityName: '',
+    transactionTarget: '',
+    transactionDate: '',
+    totalPriceRaw: result.totalPrice,
+    unitPricePerPing: 0,
+    totalArea: 0,
+    mainBuildingRatio: '',
+    buildingType: '',
+    layout: '',
+    mainUsage: '',
+    management: '',
+    hasElevator: '',
+    note: '',
+    buildingMaterial: '',
+    completionDate: '',
+    parkingType: '',
+    parkingFloor: '',
+  }
+
+  const metaPatterns = [
+    ['address', /地段位置或門牌:\s*(.+?)(?:\s*社區名稱|$)/],
+    ['communityName', /社區名稱:\s*(.+?)(?:\s*交易標的|$)/],
+    ['transactionTarget', /交易標的:\s*(.+?)(?:\s*交易日期|$)/],
+    ['transactionDate', /交易日期:\s*(\S+)/],
+    ['unitPricePerPing', /交易單價約:\s*([\d,]+)/],
+    ['totalArea', /交易總面積:\s*([\d.]+)/],
+    ['mainBuildingRatio', /主建物佔比\(%\):\s*(\S+)/],
+    ['buildingType', /建物型態:\s*(.+?)(?:\s*屋齡|$)/],
+    ['layout', /建物現況格局:\s*(.+?)(?:\s*主要用途|$)/],
+    ['mainUsage', /主要用途:\s*(.+?)(?:\s*車位交易總價|$)/],
+    ['management', /管理組織:\s*(.+?)(?:\s*有無電梯|$)/],
+    ['hasElevator', /有無電梯:\s*(.+?)(?:\s*備註|$)/],
+    ['note', /備註:\s*(.+?)(?:\s*交易明細|$)/],
+  ]
+
+  for (const [key, pattern] of metaPatterns) {
+    const match = text.match(pattern)
+    if (match) {
+      const val = match[1].trim()
+      if (key === 'unitPricePerPing') {
+        meta[key] = parseNumber(val)
+      } else if (key === 'totalArea') {
+        meta[key] = parseFloat(val) || 0
+      } else {
+        meta[key] = val
+      }
+    }
+  }
+
+  // 建材和完成年月（從主建物所在行擷取，取最後一筆主建物的資訊）
+  const buildingMaterialMatch = text.match(/(鋼筋混凝土構造|鋼骨構造|鋼骨鋼筋混凝土構造|加強磚造|磚造|木造)/)
+  if (buildingMaterialMatch) {
+    meta.buildingMaterial = buildingMaterialMatch[1]
+  }
+
+  // 建築完成年月（取主建物那筆，格式如 111/10）
+  const completionMatches = [...text.matchAll(/(\d{2,3})\/(\d{1,2})\s+十/g)]
+  if (completionMatches.length > 0) {
+    const last = completionMatches[completionMatches.length - 1]
+    meta.completionDate = `${last[1]}/${last[2]}`
+  }
+
+  // 車位類別和樓層（從車位資料區塊後的所有內容）
+  const parkingSectionMatch = text.match(/車\s*位\s*資\s*料([\s\S]*)$/)
+  if (parkingSectionMatch) {
+    const parkingSection = parkingSectionMatch[1]
+    const parkingTypeMatch = parkingSection.match(/(坡道平面|坡道機械|升降平面|升降機械|塔式車位|一樓平面)/)
+    if (parkingTypeMatch) {
+      meta.parkingType = parkingTypeMatch[1]
+    }
+    const parkingFloorMatch = parkingSection.match(/(地下[一二三四五六七八九十\d]+樓|地上[一二三四五六七八九十\d]+樓)/)
+    if (parkingFloorMatch) {
+      meta.parkingFloor = parkingFloorMatch[1]
+    }
+  }
+
+  return { data: result, meta }
 }

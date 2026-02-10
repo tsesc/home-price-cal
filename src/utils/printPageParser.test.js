@@ -207,3 +207,133 @@ describe('parsePrintPageText - 瀏覽器全選複製格式', () => {
     expect(data.unitPrice).toBeCloseTo(32.06, 0)
   })
 })
+
+describe('parsePrintPageText - meta 描述性欄位解析（單行格式）', () => {
+  it('應正確解析地段位置', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.address).toBe('汐止區福德一路１７６巷００１５號四樓')
+  })
+
+  it('應正確解析社區名稱', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.communityName).toBe('采采良品')
+  })
+
+  it('應正確解析交易標的', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.transactionTarget).toBe('房地(土地+建物)+車位')
+  })
+
+  it('應正確解析交易日期', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.transactionDate).toBe('108/12/31')
+  })
+
+  it('應正確解析交易單價', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.unitPricePerPing).toBe(320565)
+  })
+
+  it('應正確解析交易總面積', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.totalArea).toBe(50.51)
+  })
+
+  it('應正確解析主建物佔比', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.mainBuildingRatio).toBe('58.07%')
+  })
+
+  it('應正確解析建物型態', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.buildingType).toBe('住宅大樓(11層含以上有電梯)')
+  })
+
+  it('應正確解析建物現況格局', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.layout).toBe('3房2廳2衛')
+  })
+
+  it('應正確解析主要用途', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.mainUsage).toBe('住家用')
+  })
+
+  it('應正確解析管理組織', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.management).toBe('有')
+  })
+
+  it('應正確解析有無電梯', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.hasElevator).toBe('有')
+  })
+
+  it('應正確解析備註', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.note).toContain('親友、員工、共有人或其他特殊關係間之交易')
+  })
+
+  it('應正確解析建材', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.buildingMaterial).toBe('鋼筋混凝土構造')
+  })
+
+  it('應正確解析車位類別', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.parkingType).toBe('坡道平面')
+  })
+
+  it('應正確解析車位樓層', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.parkingFloor).toBe('地下四樓')
+  })
+
+  it('totalPriceRaw 應等於交易總價', () => {
+    const { meta } = parsePrintPageText(sampleText)
+    expect(meta.totalPriceRaw).toBe(14340000)
+  })
+})
+
+describe('parsePrintPageText - meta 描述性欄位解析（瀏覽器 tab 格式）', () => {
+  it('應正確解析地段位置', () => {
+    const { meta } = parsePrintPageText(browserCopyText)
+    expect(meta.address).toBe('汐止區福德一路１７６巷００１５號四樓')
+  })
+
+  it('應正確解析社區名稱', () => {
+    const { meta } = parsePrintPageText(browserCopyText)
+    expect(meta.communityName).toBe('采采良品')
+  })
+
+  it('應正確解析交易標的和日期', () => {
+    const { meta } = parsePrintPageText(browserCopyText)
+    expect(meta.transactionTarget).toBe('房地(土地+建物)+車位')
+    expect(meta.transactionDate).toBe('108/12/31')
+  })
+
+  it('應正確解析建物型態和格局', () => {
+    const { meta } = parsePrintPageText(browserCopyText)
+    expect(meta.buildingType).toBe('住宅大樓(11層含以上有電梯)')
+    expect(meta.layout).toBe('3房2廳2衛')
+  })
+
+  it('應正確解析車位類別和樓層', () => {
+    const { meta } = parsePrintPageText(browserCopyText)
+    expect(meta.parkingType).toBe('坡道平面')
+    expect(meta.parkingFloor).toBe('地下四樓')
+  })
+
+  it('應正確解析建材', () => {
+    const { meta } = parsePrintPageText(browserCopyText)
+    expect(meta.buildingMaterial).toBe('鋼筋混凝土構造')
+  })
+
+  it('缺失欄位應回傳空字串', () => {
+    const text = '交易總價: 10,000,000 元'
+    const { meta } = parsePrintPageText(text)
+    expect(meta.communityName).toBe('')
+    expect(meta.address).toBe('')
+    expect(meta.buildingType).toBe('')
+  })
+})

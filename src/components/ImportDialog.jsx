@@ -1,6 +1,23 @@
 import React, { useState } from 'react'
 import { parsePrintPageText } from '../utils/printPageParser'
 
+const metaLabels = {
+  address: '地段位置或門牌',
+  communityName: '社區名稱',
+  transactionTarget: '交易標的',
+  transactionDate: '交易日期',
+  buildingType: '建物型態',
+  layout: '建物現況格局',
+  mainUsage: '主要用途',
+  buildingMaterial: '主要建材',
+  completionDate: '建築完成年月',
+  management: '管理組織',
+  hasElevator: '有無電梯',
+  parkingType: '車位類別',
+  parkingFloor: '車位所在樓層',
+  note: '備註',
+}
+
 const fieldLabels = {
   mainBuildingArea: '主建物面積（坪）',
   balconyArea: '陽台面積（坪）',
@@ -15,33 +32,72 @@ const fieldLabels = {
   floors: '總樓層數',
 }
 
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024 // 2MB
+
 export default function ImportDialog({ onApply, onClose }) {
   const [rawText, setRawText] = useState('')
-  const [parsed, setParsed] = useState(null)
+  const [parsedData, setParsedData] = useState(null)
+  const [parsedMeta, setParsedMeta] = useState(null)
+  const [mapImageDataUrl, setMapImageDataUrl] = useState(null)
+  const [imageError, setImageError] = useState('')
   const [error, setError] = useState('')
 
   const handleParse = () => {
     const result = parsePrintPageText(rawText)
     if (result.error) {
       setError(result.error)
-      setParsed(null)
+      setParsedData(null)
+      setParsedMeta(null)
     } else {
       setError('')
-      setParsed(result.data)
+      setParsedData(result.data)
+      setParsedMeta(result.meta)
     }
   }
 
   const handleFieldChange = (key, value) => {
-    setParsed(prev => ({
+    setParsedData(prev => ({
       ...prev,
       [key]: parseFloat(value) || 0,
     }))
   }
 
-  const handleApply = () => {
-    if (parsed) {
-      onApply(parsed)
+  const handleMetaChange = (key, value) => {
+    setParsedMeta(prev => ({
+      ...prev,
+      [key]: value,
+    }))
+  }
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      setImageError('圖片大小不能超過 2MB')
+      setMapImageDataUrl(null)
+      return
     }
+
+    setImageError('')
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      setMapImageDataUrl(event.target.result)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleApply = () => {
+    if (parsedData) {
+      onApply({ data: parsedData, meta: parsedMeta, mapImageDataUrl })
+    }
+  }
+
+  const handleReset = () => {
+    setParsedData(null)
+    setParsedMeta(null)
+    setMapImageDataUrl(null)
+    setImageError('')
   }
 
   const handleOverlayClick = (e) => {
@@ -58,7 +114,7 @@ export default function ImportDialog({ onApply, onClose }) {
           <button className="import-close-btn" onClick={onClose}>&times;</button>
         </div>
 
-        {!parsed ? (
+        {!parsedData ? (
           <div className="import-input-section">
             <p className="import-hint">
               請將實價登錄列印頁面的內容全選複製後貼上
@@ -85,21 +141,53 @@ export default function ImportDialog({ onApply, onClose }) {
         ) : (
           <div className="import-preview-section">
             <p className="import-hint">解析結果預覽，可修改後填入表單</p>
+
+            <h4 className="import-section-title">交易資訊</h4>
+            <div className="import-fields import-meta-fields">
+              {Object.entries(metaLabels).map(([key, label]) => (
+                <div className={`import-field ${key === 'note' ? 'import-field-wide' : ''}`} key={key}>
+                  <label>{label}</label>
+                  <input
+                    type="text"
+                    value={parsedMeta[key]}
+                    onChange={(e) => handleMetaChange(key, e.target.value)}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <h4 className="import-section-title">計算參數</h4>
             <div className="import-fields">
               {Object.entries(fieldLabels).map(([key, label]) => (
                 <div className="import-field" key={key}>
                   <label>{label}</label>
                   <input
                     type="number"
-                    value={parsed[key]}
+                    value={parsedData[key]}
                     onChange={(e) => handleFieldChange(key, e.target.value)}
                     step="0.01"
                   />
                 </div>
               ))}
             </div>
+
+            <h4 className="import-section-title">地圖截圖（選填）</h4>
+            <div className="import-image-upload">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+              {imageError && <p className="import-error">{imageError}</p>}
+              {mapImageDataUrl && (
+                <div className="import-image-preview">
+                  <img src={mapImageDataUrl} alt="地圖截圖" />
+                </div>
+              )}
+            </div>
+
             <div className="import-actions">
-              <button className="import-btn-secondary" onClick={() => setParsed(null)}>
+              <button className="import-btn-secondary" onClick={handleReset}>
                 重新貼上
               </button>
               <button className="import-btn-primary" onClick={handleApply}>
