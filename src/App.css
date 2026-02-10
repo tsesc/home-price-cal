@@ -514,27 +514,76 @@ h3 {
   overflow: hidden;
 }
 
-.import-image-hint {
-  color: #888;
-  font-size: 0.85rem;
-  margin-bottom: 10px;
-}
-
 .import-paste-zone {
-  border: 2px dashed #ccc;
-  border-radius: 8px;
-  padding: 20px;
+  border: 2px dashed #667eea;
+  border-radius: 10px;
+  padding: 24px 20px;
   text-align: center;
-  color: #999;
+  color: #666;
   font-size: 0.9rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  background: #f8f9ff;
+  transition: all 0.2s;
 }
 
-.import-paste-zone input[type="file"] {
+.import-paste-zone:hover {
+  background: #f0f2ff;
+  border-color: #4a5ed4;
+}
+
+.import-paste-icon {
+  font-size: 2rem;
+  margin-bottom: 4px;
+}
+
+.import-paste-steps {
+  text-align: left;
+  line-height: 1.8;
+}
+
+.import-paste-steps p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #555;
+}
+
+.import-paste-steps kbd {
+  background: #eee;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 1px 5px;
   font-size: 0.85rem;
+  font-family: inherit;
+}
+
+.import-paste-divider {
+  color: #bbb;
+  font-size: 0.85rem;
+  margin: 4px 0;
+}
+
+.import-file-label {
+  display: inline-block;
+  padding: 6px 16px;
+  background: #667eea;
+  color: white;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.import-file-label:hover {
+  background: #4a5ed4;
+}
+
+.import-paste-drag-hint {
+  color: #bbb;
+  font-size: 0.8rem;
+  margin: 0;
 }
 
 .import-image-preview {

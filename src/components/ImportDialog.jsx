@@ -67,22 +67,55 @@ export default function ImportDialog({ onApply, onClose }) {
     }
   }, [])
 
-  // 全域 paste 事件：支援 Ctrl+V 貼上圖片
-  useEffect(() => {
-    const handlePaste = (e) => {
-      const items = e.clipboardData?.items
-      if (!items) return
-      for (const item of items) {
-        if (item.type.startsWith('image/')) {
-          e.preventDefault()
-          handleImageFromFile(item.getAsFile())
-          return
+  // 從 clipboardData 擷取圖片
+  const extractImageFromClipboard = useCallback((clipboardData) => {
+    if (!clipboardData) return false
+    // 用 files 先試（更可靠）
+    if (clipboardData.files?.length > 0) {
+      for (const file of clipboardData.files) {
+        if (file.type.startsWith('image/')) {
+          handleImageFromFile(file)
+          return true
         }
       }
     }
-    document.addEventListener('paste', handlePaste)
-    return () => document.removeEventListener('paste', handlePaste)
+    // 再試 items
+    if (clipboardData.items) {
+      for (let i = 0; i < clipboardData.items.length; i++) {
+        const item = clipboardData.items[i]
+        if (item.type.startsWith('image/')) {
+          handleImageFromFile(item.getAsFile())
+          return true
+        }
+      }
+    }
+    return false
   }, [handleImageFromFile])
+
+  // 全域 paste 事件（capture phase 確保在 input 之前攔截）
+  useEffect(() => {
+    const handlePaste = (e) => {
+      if (extractImageFromClipboard(e.clipboardData)) {
+        e.preventDefault()
+        e.stopPropagation()
+      }
+    }
+    document.addEventListener('paste', handlePaste, true) // capture phase
+    return () => document.removeEventListener('paste', handlePaste, true)
+  }, [extractImageFromClipboard])
+
+  // 拖放圖片
+  const handleDrop = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const file = e.dataTransfer?.files?.[0]
+    if (file) handleImageFromFile(file)
+  }, [handleImageFromFile])
+
+  const handleDragOver = useCallback((e) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, [])
 
   const handleParse = () => {
     const result = parsePrintPageText(rawText)
@@ -206,17 +239,28 @@ export default function ImportDialog({ onApply, onClose }) {
 
             <h4 className="import-section-title">地圖截圖（選填）</h4>
             <div className="import-image-upload">
-              <p className="import-image-hint">
-                在實價登錄頁面的地圖上按右鍵 → 複製圖片，然後回到這裡按 Ctrl+V 貼上
-              </p>
               {!mapImageDataUrl && (
-                <div className="import-paste-zone">
-                  <span>Ctrl+V 貼上圖片，或選擇檔案上傳</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
+                <div
+                  className="import-paste-zone"
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                >
+                  <div className="import-paste-icon">&#128247;</div>
+                  <div className="import-paste-steps">
+                    <p><strong>步驟 1：</strong>到實價登錄頁面，在地圖上<strong>右鍵 → 複製圖片</strong></p>
+                    <p><strong>步驟 2：</strong>回到這裡，按 <kbd>Ctrl</kbd>+<kbd>V</kbd> 貼上</p>
+                  </div>
+                  <div className="import-paste-divider">或</div>
+                  <label className="import-file-label">
+                    選擇檔案上傳
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      hidden
+                    />
+                  </label>
+                  <p className="import-paste-drag-hint">也可以直接拖放圖片到此區域</p>
                 </div>
               )}
               {imageError && <p className="import-error">{imageError}</p>}
