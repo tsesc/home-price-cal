@@ -2,10 +2,16 @@
 
 一個基於 React 的房價計算工具，專門設計用於台灣房地產市場的價格計算與分析。
 
+🔗 **線上使用**：https://tsesc.github.io/home-price-cal/
+
 ## 功能特色
 
 - **即時計算**：調整參數立即顯示計算結果
 - **詳細公式顯示**：完整展示每個計算步驟
+- **實價登錄匯入**：直接從內政部實價登錄網站複製貼上資料
+- **地圖截圖**：支援複製貼上地圖截圖（Ctrl+V）
+- **資料持久化**：自動儲存，重新整理後資料不遺失
+- **列印報告**：產生完整的計算報告，可匯出為 PDF
 - **面積比例分析**：
   - 公設比計算
   - 得房率計算
@@ -17,10 +23,11 @@
 
 ## 技術架構
 
-- **前端框架**：React 18
-- **建構工具**：Vite
+- **前端框架**：React 19
+- **建構工具**：Vite 7
 - **測試框架**：Vitest
 - **樣式**：純 CSS
+- **部署**：GitHub Pages（自動部署）
 
 ## 安裝與執行
 
@@ -83,14 +90,19 @@ npm run preview
 ```
 home-price-cal/
 ├── src/
-│   ├── App.jsx           # 主要應用程式元件
-│   ├── App.css           # 應用程式樣式
+│   ├── App.jsx                      # 主要應用程式元件
+│   ├── App.css                      # 應用程式樣式
+│   ├── components/
+│   │   ├── ImportDialog.jsx        # 實價登錄匯入對話框
+│   │   └── PrintReport.jsx         # 列印報告元件
 │   └── utils/
 │       ├── priceCalculator.js      # 核心計算邏輯
-│       └── priceCalculator.test.js # 單元測試
-├── public/               # 靜態資源
-├── package.json         # 專案配置
-└── vite.config.js      # Vite 配置
+│       ├── priceCalculator.test.js # 單元測試
+│       ├── printPageParser.js      # 實價登錄解析器
+│       └── printPageParser.test.js # 解析器測試
+├── public/                          # 靜態資源
+├── package.json                     # 專案配置
+└── vite.config.js                   # Vite 配置
 ```
 
 ## 文件說明
@@ -99,10 +111,31 @@ home-price-cal/
 - [RATIO_SUMMARY.md](./RATIO_SUMMARY.md) - 比例計算總結
 - [CLAUDE.md](./CLAUDE.md) - 開發指引與注意事項
 
+## 如何使用實價登錄匯入功能
+
+1. 前往[內政部實價登錄網站](https://plvr.land.moi.gov.tw/DownloadOpenData)查詢物件
+2. 開啟物件詳細頁面
+3. 在列印頁面全選（Ctrl+A）並複製（Ctrl+C）
+4. 在本工具點擊「從實價登錄匯入」按鈕
+5. 貼上（Ctrl+V）複製的內容
+6. 如需地圖截圖：
+   - 在實價登錄頁面的地圖上右鍵 → 複製圖片
+   - 回到本工具，在圖片區域按 Ctrl+V 貼上
+7. 點擊「填入表單」即可自動帶入所有資料
+
+## 貢獻
+
+歡迎提交 Issue 和 Pull Request！
+
+如果您發現計算錯誤、有功能建議或遇到任何問題，請隨時開啟 Issue 討論。
+
 ## 授權
 
-私人專案，版權所有。
+MIT License
+
+本專案採用 MIT 授權條款，歡迎自由使用、修改和分發。
 
 ## 聯絡資訊
 
-如有問題或建議，請透過 GitHub Issues 聯繫。
+- GitHub Issues：https://github.com/tsesc/home-price-cal/issues
+- 線上工具：https://tsesc.github.io/home-price-cal/

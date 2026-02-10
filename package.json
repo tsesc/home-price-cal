@@ -14,9 +14,9 @@
     "deploy": "gh-pages -d dist"
   },
   "homepage": "https://tsesc.github.io/home-price-cal",
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["taiwan", "real-estate", "price-calculator", "property"],
+  "author": "Jack Tse",
+  "license": "MIT",
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",
     "react": "^19.1.1",
