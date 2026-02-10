@@ -337,3 +337,123 @@ describe('parsePrintPageText - meta 描述性欄位解析（瀏覽器 tab 格式
     expect(meta.buildingType).toBe('')
   })
 })
+
+// 第三種格式：共同使用部分無描述，面積在標籤前面
+const noDescCommonAreaText = `logo
+地段位置或門牌:\t汐止區福德二路７５號七樓之２
+社區名稱:\t長虹大鎮
+交易標的:\t房地(土地+建物)+車位
+交易日期:\t114/08/09
+交易總價:\t26,000,000\t元
+交易單價約:\t494,274\t(元/坪)
+交易總面積:\t53.93\t坪
+主建物佔比(%):\t60.26%
+交易棟筆數:\t
+土地:\t2\t筆\t建物:\t1\t棟(戶)\t車位:\t1\t個
+建物型態:\t住宅大樓(11層含以上有電梯)
+屋齡:\t16
+建物現況格局:\t4房2廳2衛
+主要用途:\t住家用
+車位交易總價:\t150
+樓別/樓高:\t七層/十四層
+管理組織:\t有
+有無電梯:\t有
+備註:\t陽台外推;其他增建;
+交易明細
+土地建物買賣  交易明細
+土  地  資  料
+土地區段位置\t土地移轉面積\t使用分區或編定
+福德段816地號\t5.84坪 持分移轉(299/10000)\t都市：第二種住宅區
+福德段816-1地號\t0.01坪 持分移轉(299/10000)\t都市：道路用地
+建  物  資  料
+屋齡\t建物移轉面積\t持分\t主要用途\t主要建材\t建築
+完成年月\t總樓層數\t建物分層
+16\t\t主建物\t29.87坪\t全筆移轉\t住家用\t鋼筋混凝土造\t098/08\t十四層\t七層,陽台,雨遮
+陽台\t3.96坪
+雨遮\t1.07坪
+16\t19.04坪\t\t共同使用部分\t鋼筋混凝土造\t098/08\t十四層\t
+車  位  資  料
+車位類別\t車位交易價格\t車位面積\t所在樓層
+升降平面\t1,500,000元\t4.37坪\t地下二樓`
+
+describe('parsePrintPageText - 無描述共同使用部分格式', () => {
+  it('應正確解析交易總價', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.totalPrice).toBe(26000000)
+  })
+
+  it('應正確解析車位價格（元→萬元）', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.parkingPrice).toBe(150)
+  })
+
+  it('應正確解析車位面積', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.parkingArea).toBe(4.37)
+  })
+
+  it('應正確解析樓別和樓高', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.currentFloor).toBe(7)
+    expect(data.floors).toBe(14)
+  })
+
+  it('應正確解析主建物面積', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.mainBuildingArea).toBe(29.87)
+  })
+
+  it('應正確解析陽台面積', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.balconyArea).toBe(3.96)
+  })
+
+  it('應正確解析雨遮面積', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.canopyArea).toBe(1.07)
+  })
+
+  it('應將無描述的共同使用部分放入 commonArea2', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.commonArea2).toBe(19.04)
+  })
+
+  it('應正確解析土地面積（加總兩筆）', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    expect(data.landArea).toBeCloseTo(5.85, 2)
+  })
+
+  it('應正確計算單價', () => {
+    const { data } = parsePrintPageText(noDescCommonAreaText)
+    // 公設不含車位 = 19.04 - 4.37 = 14.67
+    // 建物總面積 = 29.87 + 3.96 + 1.07 + 14.67 = 49.57
+    // 單價 = (2600 - 150) / 49.57 ≈ 49.43
+    expect(data.unitPrice).toBeCloseTo(49.43, 0)
+  })
+
+  it('應正確解析建材（鋼筋混凝土造）', () => {
+    const { meta } = parsePrintPageText(noDescCommonAreaText)
+    expect(meta.buildingMaterial).toBe('鋼筋混凝土造')
+  })
+
+  it('應正確解析建築完成年月', () => {
+    const { meta } = parsePrintPageText(noDescCommonAreaText)
+    expect(meta.completionDate).toBe('098/08')
+  })
+
+  it('應正確解析車位類別和樓層', () => {
+    const { meta } = parsePrintPageText(noDescCommonAreaText)
+    expect(meta.parkingType).toBe('升降平面')
+    expect(meta.parkingFloor).toBe('地下二樓')
+  })
+
+  it('應正確解析社區名稱', () => {
+    const { meta } = parsePrintPageText(noDescCommonAreaText)
+    expect(meta.communityName).toBe('長虹大鎮')
+  })
+
+  it('應正確解析備註', () => {
+    const { meta } = parsePrintPageText(noDescCommonAreaText)
+    expect(meta.note).toContain('陽台外推')
+  })
+})

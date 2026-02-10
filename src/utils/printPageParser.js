@@ -98,13 +98,16 @@ export const parsePrintPageText = (text) => {
     }
   }
 
-  // Fallback: 如果沒找到共同使用部分的詳細描述，嘗試簡單匹配（通常是網頁格式）
+  // Fallback: 如果沒找到共同使用部分的詳細描述，嘗試簡單匹配
   if (result.commonArea1 === 0 && result.commonArea2 === 0) {
-    const simpleCommonMatch = text.match(/共同使用部分\s+([\d.]+)\s*坪/)
-    if (simpleCommonMatch) {
-      // 無法判斷車位相關與否，預設放入 commonArea2
-      result.commonArea2 = parseFloat(simpleCommonMatch[1])
+    // 格式1: 「共同使用部分    19.04坪」（標籤在前）
+    const simpleMatches1 = [...text.matchAll(/共同使用部分\s+([\d.]+)\s*坪/g)]
+    // 格式2: 「19.04坪    共同使用部分」（面積在前，常見於列印頁面複製）
+    const simpleMatches2 = [...text.matchAll(/([\d.]+)\s*坪\s+共同使用部分(?![，,]本共同使用部分)/g)]
+    for (const m of [...simpleMatches1, ...simpleMatches2]) {
+      result.commonArea2 += parseFloat(m[1])
     }
+    result.commonArea2 = Math.round(result.commonArea2 * 100) / 100
   }
 
   result.commonArea1 = Math.round(result.commonArea1 * 100) / 100
@@ -202,7 +205,7 @@ export const parsePrintPageText = (text) => {
   }
 
   // 建材和完成年月（從主建物所在行擷取，取最後一筆主建物的資訊）
-  const buildingMaterialMatch = text.match(/(鋼筋混凝土構造|鋼骨構造|鋼骨鋼筋混凝土構造|加強磚造|磚造|木造)/)
+  const buildingMaterialMatch = text.match(/(鋼筋混凝土構造|鋼筋混凝土造|鋼骨構造|鋼骨鋼筋混凝土構造|加強磚造|磚造|木造)/)
   if (buildingMaterialMatch) {
     meta.buildingMaterial = buildingMaterialMatch[1]
   }
