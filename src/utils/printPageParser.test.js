@@ -105,3 +105,105 @@ describe('parsePrintPageText - 實價登錄文字解析', () => {
     })
   })
 })
+
+// 瀏覽器全選複製的真實格式（含 tab 和換行）
+const browserCopyText = `logo
+地段位置或門牌:\t汐止區福德一路１７６巷００１５號四樓
+社區名稱:\t采采良品
+交易標的:\t房地(土地+建物)+車位
+交易日期:\t108/12/31
+交易總價:\t14,340,000\t元
+交易單價約:\t320,565\t(元/坪)
+交易總面積:\t50.51\t坪
+主建物佔比(%):\t58.07%
+交易棟筆數:\t
+土地:\t2\t筆\t建物:\t1\t棟(戶)\t車位:\t1\t個
+建物型態:\t住宅大樓(11層含以上有電梯)
+屋齡:\t
+建物現況格局:\t3房2廳2衛
+主要用途:\t住家用
+車位交易總價:\t144
+樓別/樓高:\t四層/十四層
+管理組織:\t有
+有無電梯:\t有
+備註:\t親友、員工、共有人或其他特殊關係間之交易;預售屋、或土地及建物分件登記案件;
+交易明細
+土地建物買賣  交易明細
+土  地  資  料
+土地區段位置\t土地移轉面積\t使用分區或編定
+福德段270地號\t6.79坪 持分移轉(10224/920000)\t都市：第二種住宅區
+福德段276地號\t0.00坪 持分移轉(15/600000)\t都市：第二種住宅區
+建  物  資  料
+屋齡\t建物移轉面積\t持分\t主要用途\t主要建材\t建築
+完成年月\t總樓層數\t建物分層
+0\t0.01坪\t\t共同使用部分，本共同使用部分項目有：防空避難室兼停車空間、水箱、電信、消防機房、無障礙梯安全梯、供行動不便者使用升降機、台電配電室、發電機房、排風管道、安全梯、無障礙廁所、管委會使用空間、梯廳、無障礙通路、雨遮、消防機房、電梯機房等１７項。\t鋼筋混凝土構造\t109/11\t十一層\t
+0\t\t主建物\t0.02坪\t持分移轉\t店鋪\t鋼筋混凝土構造\t109/11\t十一層\t一層
+0\t\t主建物\t0.03坪\t持分移轉\t辦公室\t鋼筋混凝土構造\t111/10\t十四層\t一層
+0\t\t主建物\t23.32坪\t全筆移轉\t集合住宅\t鋼筋混凝土構造\t111/10\t十四層\t四層,陽台,雨遮
+陽台\t3.08坪
+雨遮\t0.47坪
+0\t2.62坪\t\t共同使用部分，本共同使用部分項目有：防空避難室兼停車空間、車道、停車空間等３項。\t鋼筋混凝土構造\t111/10\t十四層\t
+0\t6.65坪\t\t共同使用部分，本共同使用部分項目有：防空避難室兼停車空間、車道、停車空間等３項。\t鋼筋混凝土構造\t111/10\t十四層\t
+0\t0.02坪\t\t共同使用部分，本共同使用部分項目有：行動不便者電梯、梯廳、無障礙安全梯、機房、水箱、垃圾車暫停空間、垃圾暫存室、電信機房、台電管道間、台電配電場所、停車空間、發電機房、緊急昇降機、排煙室、安全梯、管委會使用空間、公共服務空間、行動不便者樓梯、雨遮、消防機房、電梯機房等２１項。\t鋼筋混凝土構造\t111/10\t十四層\t
+0\t14.28坪\t\t共同使用部分，本共同使用部分項目有：行動不便者電梯、梯廳、無障礙安全梯、機房、水箱、垃圾車暫停空間、垃圾暫存室、電信機房、台電管道間、台電配電場所、停車空間、發電機房、緊急昇降機、排煙室、安全梯、管委會使用空間、公共服務空間、行動不便者樓梯、雨遮、消防機房、電梯機房等２１項。\t鋼筋混凝土構造\t111/10\t十四層\t
+車  位  資  料
+車位類別\t車位交易價格\t車位面積\t所在樓層
+坡道平面\t1,440,000元\t10.26坪\t地下四樓`
+
+describe('parsePrintPageText - 瀏覽器全選複製格式', () => {
+  it('應正確解析交易總價', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.totalPrice).toBe(14340000)
+  })
+
+  it('應正確解析車位價格', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.parkingPrice).toBe(144)
+  })
+
+  it('應正確解析樓別和樓高', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.currentFloor).toBe(4)
+    expect(data.floors).toBe(14)
+  })
+
+  it('應正確加總多筆主建物面積', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.mainBuildingArea).toBeCloseTo(23.37, 2)
+  })
+
+  it('應正確解析陽台面積', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.balconyArea).toBe(3.08)
+  })
+
+  it('應正確解析雨遮面積', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.canopyArea).toBe(0.47)
+  })
+
+  it('應正確歸類車位相關公設', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.commonArea1).toBeCloseTo(9.27, 2)
+  })
+
+  it('應正確歸類一般公設', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.commonArea2).toBeCloseTo(14.31, 2)
+  })
+
+  it('應正確解析車位面積', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.parkingArea).toBe(10.26)
+  })
+
+  it('應正確解析土地面積', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.landArea).toBeCloseTo(6.79, 2)
+  })
+
+  it('應正確計算單價', () => {
+    const { data } = parsePrintPageText(browserCopyText)
+    expect(data.unitPrice).toBeCloseTo(32.06, 0)
+  })
+})

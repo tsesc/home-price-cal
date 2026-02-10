@@ -40,7 +40,7 @@ export const parsePrintPageText = (text) => {
     agePremium: 1,
   }
 
-  // 1. 交易總價
+  // 1. 交易總價（支援 tab/空白分隔）
   const totalPriceMatch = text.match(/交易總價:\s*([\d,]+)\s*元/)
   if (totalPriceMatch) {
     result.totalPrice = parseNumber(totalPriceMatch[1])
@@ -52,8 +52,8 @@ export const parsePrintPageText = (text) => {
     result.parkingPrice = parseNumber(parkingPriceSummaryMatch[1])
   }
 
-  // 車位詳細資料（車位資料表格，單位為元）
-  const parkingDetailMatch = text.match(/車位交易價格\s+車位面積[\s\S]*?([\d,]+)元\s+([\d.]+)坪/)
+  // 車位詳細資料（車位資料表格，單位為元，支援 tab 分隔）
+  const parkingDetailMatch = text.match(/車位交易價格[\s\S]*?([\d,]+)\s*元\s+([\d.]+)\s*坪/)
   if (parkingDetailMatch) {
     result.parkingPrice = parseNumber(parkingDetailMatch[1])
     result.parkingArea = parseFloat(parkingDetailMatch[2])
@@ -66,27 +66,27 @@ export const parsePrintPageText = (text) => {
     result.floors = chineseToNumber(floorMatch[2].trim())
   }
 
-  // 4. 主建物面積（可能有多筆，需加總）
-  const mainBuildingMatches = text.matchAll(/主建物([\d.]+)坪/g)
+  // 4. 主建物面積（可能有多筆，需加總；支援「主建物\t23.32坪」或「主建物23.32坪」）
+  const mainBuildingMatches = text.matchAll(/主建物\s*([\d.]+)\s*坪/g)
   for (const m of mainBuildingMatches) {
     result.mainBuildingArea += parseFloat(m[1])
   }
   result.mainBuildingArea = Math.round(result.mainBuildingArea * 100) / 100
 
-  // 陽台
-  const balconyMatch = text.match(/陽台([\d.]+)坪/)
+  // 陽台（支援「陽台\t3.08坪」或「陽台3.08坪」）
+  const balconyMatch = text.match(/陽台\s*([\d.]+)\s*坪/)
   if (balconyMatch) {
     result.balconyArea = parseFloat(balconyMatch[1])
   }
 
-  // 雨遮
-  const canopyMatch = text.match(/雨遮([\d.]+)坪/)
+  // 雨遮（支援「雨遮\t0.47坪」或「雨遮0.47坪」）
+  const canopyMatch = text.match(/雨遮\s*([\d.]+)\s*坪/)
   if (canopyMatch) {
     result.canopyArea = parseFloat(canopyMatch[1])
   }
 
   // 5. 共同使用部分分類
-  const commonAreaPattern = /([\d.]+)坪\s+共同使用部分[，,]本共同使用部分項目有[：:]([^。]+)/g
+  const commonAreaPattern = /([\d.]+)\s*坪\s+共同使用部分[，,]本共同使用部分項目有[：:]([^。]+)/g
   let commonMatch
   while ((commonMatch = commonAreaPattern.exec(text)) !== null) {
     const area = parseFloat(commonMatch[1])
