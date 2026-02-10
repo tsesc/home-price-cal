@@ -640,6 +640,7 @@ h3 {
   background: rgba(0, 0, 0, 0.6);
   z-index: 2000;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 20px;
 }
 
@@ -805,50 +806,70 @@ h3 {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .print-overlay,
-  .print-overlay * {
-    visibility: visible;
-  }
-
-  .print-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: white;
-    padding: 0;
-  }
-
-  .print-report {
-    box-shadow: none;
-    border-radius: 0;
-    padding: 20px;
-    max-width: none;
-  }
-
-  .no-print {
+  /* 隱藏主要內容 */
+  .container {
     display: none !important;
   }
 
+  /* 顯示列印報告 */
+  .print-overlay {
+    display: block !important;
+    position: static !important;
+    background: white !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .print-report {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 15mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  /* 隱藏工具列 */
+  .no-print,
+  .print-toolbar {
+    display: none !important;
+  }
+
+  /* 避免分頁切斷 */
   .print-section {
+    page-break-inside: avoid;
     break-inside: avoid;
   }
 
+  .print-title-section {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* 表格樣式 */
   .print-table-bordered {
-    border: 1px solid #ccc;
+    border: 1px solid #333;
   }
 
   .print-table-bordered td,
   .print-table-bordered th {
-    border: 1px solid #ddd;
+    border: 1px solid #666;
   }
 
+  /* 地圖圖片 */
+  .print-map-image img {
+    max-height: 400px;
+    object-fit: contain;
+  }
+
+  /* 頁面設定 */
   @page {
     size: A4;
     margin: 15mm;
+  }
+
+  /* 確保內容可見 */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
