@@ -348,6 +348,8 @@ function App() {
         />
       )}
 
+      <div className="app-version">v{__APP_VERSION__}</div>
+
       {showPrintReport && (
         <PrintReport
           transactionData={transactionData}
