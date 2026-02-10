@@ -50,6 +50,13 @@ function App() {
     }))
   }
 
+  const handleMetaChange = (key, value) => {
+    setTransactionData(prev => ({
+      ...prev,
+      [key]: value,
+    }))
+  }
+
   const handleImportApply = ({ data, meta, mapImageDataUrl }) => {
     setParameters(prev => ({
       ...prev,
@@ -86,7 +93,47 @@ function App() {
           >
             產生報告
           </button>
-          
+
+          {transactionData && (
+            <div className="parameter-group transaction-info-group">
+              <h3>交易資訊</h3>
+              {[
+                ['address', '地段位置'],
+                ['communityName', '社區名稱'],
+                ['transactionTarget', '交易標的'],
+                ['transactionDate', '交易日期'],
+                ['buildingType', '建物型態'],
+                ['layout', '格局'],
+                ['mainUsage', '主要用途'],
+                ['buildingMaterial', '主要建材'],
+                ['completionDate', '建築完成年月'],
+                ['management', '管理組織'],
+                ['hasElevator', '有無電梯'],
+                ['parkingType', '車位類別'],
+                ['parkingFloor', '車位樓層'],
+              ].map(([key, label]) => (
+                <div className="parameter" key={key}>
+                  <label>{label}</label>
+                  <input
+                    type="text"
+                    value={transactionData[key] || ''}
+                    onChange={(e) => handleMetaChange(key, e.target.value)}
+                    className="text-input"
+                  />
+                </div>
+              ))}
+              <div className="parameter parameter-wide">
+                <label>備註</label>
+                <textarea
+                  value={transactionData.note || ''}
+                  onChange={(e) => handleMetaChange('note', e.target.value)}
+                  className="text-input note-input"
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
+
           <div className="parameter-group">
             <h3>建物面積（坪）</h3>
             <div className="parameter">
