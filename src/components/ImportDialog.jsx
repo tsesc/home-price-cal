@@ -183,7 +183,10 @@ export default function ImportDialog({ onApply, onClose }) {
         {!parsedData ? (
           <div className="import-input-section">
             <p className="import-hint">
-              請將實價登錄列印頁面的內容全選複製後貼上
+              <strong>重要：</strong>請從實價登錄<strong>「列印頁面」</strong>全選（Ctrl+A）並複製（Ctrl+C），不要直接從網頁複製
+            </p>
+            <p className="import-hint-secondary">
+              提示：在實價登錄網站點選「列印」後，在列印預覽頁面按 Ctrl+A 全選，再按 Ctrl+C 複製
             </p>
             <textarea
               className="import-textarea"

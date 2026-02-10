@@ -97,6 +97,16 @@ export const parsePrintPageText = (text) => {
       result.commonArea2 += area
     }
   }
+
+  // Fallback: 如果沒找到共同使用部分的詳細描述，嘗試簡單匹配（通常是網頁格式）
+  if (result.commonArea1 === 0 && result.commonArea2 === 0) {
+    const simpleCommonMatch = text.match(/共同使用部分\s+([\d.]+)\s*坪/)
+    if (simpleCommonMatch) {
+      // 無法判斷車位相關與否，預設放入 commonArea2
+      result.commonArea2 = parseFloat(simpleCommonMatch[1])
+    }
+  }
+
   result.commonArea1 = Math.round(result.commonArea1 * 100) / 100
   result.commonArea2 = Math.round(result.commonArea2 * 100) / 100
 
