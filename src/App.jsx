@@ -4,8 +4,18 @@ import { calculateAreas, calculatePrices, calculateRatios } from './utils/priceC
 import ImportDialog from './components/ImportDialog'
 import PrintReport from './components/PrintReport'
 
+const STORAGE_KEY = 'home-price-cal'
+
+function loadSavedState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch { /* ignore */ }
+  return null
+}
+
 function App() {
-  const initialParams = {
+  const defaultParams = {
     mainBuildingArea: 23.43,
     balconyArea: 2.81,
     canopyArea: 1.28,
@@ -22,22 +32,33 @@ function App() {
     floorPremium: 1,
     agePremium: 1,
   }
-  
+
+  const saved = loadSavedState()
+  const initialParams = saved?.parameters ?? defaultParams
+  const initialTransaction = saved?.transactionData ?? null
+
   const [parameters, setParameters] = useState(initialParams)
   const [showImportDialog, setShowImportDialog] = useState(false)
-  const [transactionData, setTransactionData] = useState(null)
+  const [transactionData, setTransactionData] = useState(initialTransaction)
   const [showPrintReport, setShowPrintReport] = useState(false)
-  
+
   // 初始化時就計算，避免空物件問題
   const [areas, setAreas] = useState(() => calculateAreas(initialParams))
   const [prices, setPrices] = useState(() => calculatePrices(initialParams))
   const [ratios, setRatios] = useState(() => calculateRatios(initialParams))
 
+  // 持久化到 localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ parameters, transactionData }))
+    } catch { /* quota exceeded - ignore */ }
+  }, [parameters, transactionData])
+
   useEffect(() => {
     const calculatedAreas = calculateAreas(parameters)
     const calculatedPrices = calculatePrices(parameters)
     const calculatedRatios = calculateRatios(parameters)
-    
+
     setAreas(calculatedAreas)
     setPrices(calculatedPrices)
     setRatios(calculatedRatios)
@@ -131,6 +152,14 @@ function App() {
                   rows={2}
                 />
               </div>
+              {transactionData.mapImageDataUrl && (
+                <div className="parameter parameter-wide map-image-section">
+                  <label>地圖截圖</label>
+                  <div className="map-image-preview">
+                    <img src={transactionData.mapImageDataUrl} alt="地圖截圖" />
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
