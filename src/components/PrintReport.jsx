@@ -1,4 +1,5 @@
 import React from 'react'
+import { createPortal } from 'react-dom'
 
 const formatPrice = (val) => {
   if (!val && val !== 0) return '-'
@@ -19,7 +20,7 @@ export default function PrintReport({
   const now = new Date()
   const timestamp = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
-  return (
+  return createPortal(
     <>
       <div className="print-backdrop" onClick={onClose}></div>
       <div className="print-modal">
@@ -244,6 +245,7 @@ export default function PrintReport({
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   )
 }
