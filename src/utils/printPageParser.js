@@ -86,7 +86,10 @@ export const parsePrintPageText = (text) => {
   }
 
   // 5. 共同使用部分分類
-  const commonAreaPattern = /([\d.]+)\s*坪\s+共同使用部分[，,]本共同使用部分項目有[：:]([^。]+)/g
+  // 支援兩種格式：
+  //   「共同使用部分，本共同使用部分項目有：...」（瀏覽器複製格式）
+  //   「本共同使用部分之項目有：...」（列印頁面直接複製格式）
+  const commonAreaPattern = /([\d.]+)\s*坪\s+(?:共同使用部分[，,])?本共同使用部分之?項目有[：:]([^。]+)/g
   let commonMatch
   while ((commonMatch = commonAreaPattern.exec(text)) !== null) {
     const area = parseFloat(commonMatch[1])
@@ -103,7 +106,7 @@ export const parsePrintPageText = (text) => {
     // 格式1: 「共同使用部分    19.04坪」（標籤在前）
     const simpleMatches1 = [...text.matchAll(/共同使用部分\s+([\d.]+)\s*坪/g)]
     // 格式2: 「19.04坪    共同使用部分」（面積在前，常見於列印頁面複製）
-    const simpleMatches2 = [...text.matchAll(/([\d.]+)\s*坪\s+共同使用部分(?![，,]本共同使用部分)/g)]
+    const simpleMatches2 = [...text.matchAll(/([\d.]+)\s*坪\s+共同使用部分(?![，,]本共同使用部分|之?項目有)/g)]
     for (const m of [...simpleMatches1, ...simpleMatches2]) {
       result.commonArea2 += parseFloat(m[1])
     }

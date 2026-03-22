@@ -457,3 +457,112 @@ describe('parsePrintPageText - 無描述共同使用部分格式', () => {
     expect(meta.note).toContain('陽台外推')
   })
 })
+
+// 第四種格式：「本共同使用部分之項目有」（無「共同使用部分，」前綴，有「之」字）
+const altCommonAreaText = `logo
+地段位置或門牌:    汐止區福德二路６７之２號十一樓
+社區名稱:    幸福城市
+交易標的:    房地(土地+建物)+車位
+交易日期:    114/09/13
+交易總價:    23,980,000    元
+交易單價約:    608,417    (元/坪)
+交易總面積:    44.45    坪
+主建物佔比(%):    52.41%
+交易棟筆數:
+土地:    1    筆    建物:    1    棟(戶)    車位:    1    個
+建物型態:    住宅大樓(11層含以上有電梯)
+屋齡:    8
+建物現況格局:    3房2廳2衛
+主要用途:    住家用
+車位交易總價:    250
+樓別/樓高:    十一層/十五層
+管理組織:    有
+有無電梯:    有
+備註:
+交易明細
+土地建物買賣  交易明細
+土  地  資  料
+土地區段位置    土地移轉面積    使用分區或編定
+福德段172地號    5.53坪 持分移轉(68/10000)    都市：第二種住宅區
+建  物  資  料
+屋齡    建物移轉面積    持分    主要用途    主要建材    建築
+完成年月    總樓層數    建物分層
+8        主建物    18.50坪    全筆移轉    住家用    鋼筋混凝土構造    106/07    十五層    十一層,陽台,雨遮
+陽台    2.93坪
+雨遮    2.22坪
+8    16.29坪        本共同使用部分之項目有：管委會空間、梯廳、大廳、防空避難室兼停車空間、梯間、垃圾儲存室、台電配電場所、停車空間、電信機房、水箱、發電機室、消防泵浦室、雨水回收機房、污水機房等１４項。    鋼筋混凝土構造    106/07    十五層
+8    4.51坪        本共同使用部分之項目有：梯廳、梯間、機械室、水箱等４項。    鋼筋混凝土構造    106/07    十五層
+車  位  資  料
+車位類別    車位交易價格    車位面積    所在樓層
+坡道平面    2,500,000元    9.15坪    地下二樓`
+
+describe('parsePrintPageText - 「本共同使用部分之項目有」格式', () => {
+  it('應正確解析交易總價', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.totalPrice).toBe(23980000)
+  })
+
+  it('應正確解析主建物面積', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.mainBuildingArea).toBe(18.50)
+  })
+
+  it('應正確解析陽台面積', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.balconyArea).toBe(2.93)
+  })
+
+  it('應正確解析雨遮面積', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.canopyArea).toBe(2.22)
+  })
+
+  it('應正確歸類一般公設（兩筆皆含一般關鍵字）', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    // 16.29 + 4.51 = 20.80（兩筆都含梯廳、水箱等一般關鍵字）
+    expect(data.commonArea2).toBeCloseTo(20.80, 2)
+  })
+
+  it('車位相關公設應為 0', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.commonArea1).toBe(0)
+  })
+
+  it('應正確解析車位面積', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.parkingArea).toBe(9.15)
+  })
+
+  it('應正確解析車位價格', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.parkingPrice).toBe(250)
+  })
+
+  it('應正確解析樓別和樓高', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.currentFloor).toBe(11)
+    expect(data.floors).toBe(15)
+  })
+
+  it('應正確解析土地面積', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    expect(data.landArea).toBe(5.53)
+  })
+
+  it('應正確計算單價', () => {
+    const { data } = parsePrintPageText(altCommonAreaText)
+    // 公設不含車位 = 20.80 - 9.15 = 11.65
+    // 建物總面積 = 18.50 + 2.93 + 2.22 + 11.65 = 35.30
+    // 單價 = (2398 - 250) / 35.30 ≈ 60.85
+    expect(data.unitPrice).toBeCloseTo(60.85, 0)
+  })
+
+  it('應正確解析 meta 欄位', () => {
+    const { meta } = parsePrintPageText(altCommonAreaText)
+    expect(meta.address).toBe('汐止區福德二路６７之２號十一樓')
+    expect(meta.communityName).toBe('幸福城市')
+    expect(meta.transactionDate).toBe('114/09/13')
+    expect(meta.parkingType).toBe('坡道平面')
+    expect(meta.parkingFloor).toBe('地下二樓')
+  })
+})
