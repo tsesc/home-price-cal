@@ -59,6 +59,17 @@ export const parsePrintPageText = (text) => {
     result.parkingArea = parseFloat(parkingDetailMatch[2])
   }
 
+  // Fallback: 車位價格缺失時，仍嘗試從車位資料區塊取得面積（車位含在總價中不另計）
+  if (result.parkingArea === 0) {
+    const parkingSectionForArea = text.match(/車\s*位\s*資\s*料([\s\S]*)$/)
+    if (parkingSectionForArea) {
+      const areaOnlyMatch = parkingSectionForArea[1].match(/([\d.]+)\s*坪/)
+      if (areaOnlyMatch) {
+        result.parkingArea = parseFloat(areaOnlyMatch[1])
+      }
+    }
+  }
+
   // 3. 樓別/樓高
   const floorMatch = text.match(/樓別\/樓高:\s*(.+?)\/(.+?)(?:\s|$)/)
   if (floorMatch) {

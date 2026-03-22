@@ -566,3 +566,73 @@ describe('parsePrintPageText - 「本共同使用部分之項目有」格式', (
     expect(meta.parkingFloor).toBe('地下二樓')
   })
 })
+
+// 第五種格式：車位無單獨定價（車位含在總價中）
+const noParkingPriceText = `logo
+地段位置或門牌:    汐止區福德二路５９號二樓
+社區名稱:    幸福城市
+交易標的:    房地(土地+建物)+車位
+交易日期:    110/09/07
+交易總價:    16,600,000    元
+交易單價約:    373,458    (元/坪)
+交易總面積:    44.45    坪
+主建物佔比(%):    53.62%
+交易棟筆數:
+土地:    1    筆    建物:    1    棟(戶)    車位:    1    個
+建物型態:    住宅大樓(11層含以上有電梯)
+屋齡:    4
+建物現況格局:    3房2廳2衛
+主要用途:    住家用
+車位交易總價:
+樓別/樓高:    二層/十五層
+管理組織:    有
+有無電梯:    有
+備註:
+交易明細
+土地建物買賣  交易明細
+土  地  資  料
+土地區段位置    土地移轉面積    使用分區或編定
+福德段172地號    5.53坪 持分移轉(68/10000)    都市：第二種住宅區
+建  物  資  料
+屋齡    建物移轉面積    持分    主要用途    主要建材    建築
+完成年月    總樓層數    建物分層
+4        主建物    18.93坪    全筆移轉    住家用    鋼筋混凝土構造    106/07    十五層    二層,陽台,雨遮
+陽台    2.15坪
+雨遮    2.57坪
+4    16.39坪        本共同使用部分之項目有：管委會空間、梯廳、大廳、防空避難室兼停車空間、梯間、垃圾儲存室、台電配電場所、停車空間、電信機房、水箱、發電機室、消防泵浦室、雨水回收機房、污水機房等１４項。    鋼筋混凝土構造    106/07    十五層
+4    4.41坪        本共同使用部分之項目有：梯廳、梯間、機械室、水箱等４項。    鋼筋混凝土構造    106/07    十五層
+車  位  資  料
+車位類別    車位交易價格    車位面積    所在樓層
+坡道平面        9.15坪    地下四樓`
+
+describe('parsePrintPageText - 車位無單獨定價格式', () => {
+  it('應正確解析車位面積（即使沒有價格）', () => {
+    const { data } = parsePrintPageText(noParkingPriceText)
+    expect(data.parkingArea).toBe(9.15)
+  })
+
+  it('車位價格應為 0', () => {
+    const { data } = parsePrintPageText(noParkingPriceText)
+    expect(data.parkingPrice).toBe(0)
+  })
+
+  it('公設比應正確扣除車位面積', () => {
+    const { data } = parsePrintPageText(noParkingPriceText)
+    // commonAreasWithoutParking = 20.80 - 9.15 = 11.65
+    // buildingTotalArea = 18.93 + 2.15 + 2.57 + 11.65 = 35.30
+    // 公設比 = 11.65 / 35.30 ≈ 33%（不應出現 46.8% 的異常值）
+    const commonArea2 = data.commonArea1 + data.commonArea2
+    const commonWithoutParking = commonArea2 - data.parkingArea
+    const buildingTotal = data.mainBuildingArea + data.balconyArea + data.canopyArea + commonWithoutParking
+    const ratio = (commonWithoutParking / buildingTotal) * 100
+    expect(ratio).toBeCloseTo(33, 0)
+  })
+
+  it('總面積應與實價登錄吻合（44.45 坪）', () => {
+    const { data } = parsePrintPageText(noParkingPriceText)
+    const commonWithoutParking = data.commonArea1 + data.commonArea2 - data.parkingArea
+    const buildingTotal = data.mainBuildingArea + data.balconyArea + data.canopyArea + commonWithoutParking
+    const totalWithParking = buildingTotal + data.parkingArea
+    expect(totalWithParking).toBeCloseTo(44.45, 1)
+  })
+})
