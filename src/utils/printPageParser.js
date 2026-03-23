@@ -59,15 +59,13 @@ export const parsePrintPageText = (text) => {
     result.parkingArea = parseFloat(parkingDetailMatch[2])
   }
 
-  // Fallback: 車位價格缺失時，仍嘗試從車位資料區塊取得面積（車位含在總價中不另計）
+  // 車位資料區塊（供後續面積 fallback 和 meta 解析共用）
+  const parkingSectionMatch = text.match(/車\s*位\s*資\s*料([\s\S]*)$/)
+
+  // Fallback: 車位價格缺失時（車位含在總價中），仍嘗試解析面積
   if (result.parkingArea === 0) {
-    const parkingSectionForArea = text.match(/車\s*位\s*資\s*料([\s\S]*)$/)
-    if (parkingSectionForArea) {
-      const areaOnlyMatch = parkingSectionForArea[1].match(/([\d.]+)\s*坪/)
-      if (areaOnlyMatch) {
-        result.parkingArea = parseFloat(areaOnlyMatch[1])
-      }
-    }
+    const areaMatch = parkingSectionMatch?.[1].match(/([\d.]+)\s*坪/)
+    if (areaMatch) result.parkingArea = parseFloat(areaMatch[1])
   }
 
   // 3. 樓別/樓高
@@ -231,8 +229,7 @@ export const parsePrintPageText = (text) => {
     meta.completionDate = `${last[1]}/${last[2]}`
   }
 
-  // 車位類別和樓層（從車位資料區塊後的所有內容）
-  const parkingSectionMatch = text.match(/車\s*位\s*資\s*料([\s\S]*)$/)
+  // 車位類別和樓層
   if (parkingSectionMatch) {
     const parkingSection = parkingSectionMatch[1]
     const parkingTypeMatch = parkingSection.match(/(坡道平面|坡道機械|升降平面|升降機械|塔式車位|一樓平面)/)
