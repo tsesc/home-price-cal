@@ -82,8 +82,7 @@ export const parsePrintPageText = (text) => {
   }
   result.mainBuildingArea = Math.round(result.mainBuildingArea * 100) / 100
 
-  // 陽台（支援「陽台\t3.08坪」或「陽台3.08坪」）
-  const balconyMatch = text.match(/陽台\s*([\d.]+)\s*坪/)
+  const balconyMatch = text.match(/陽[台臺]\s*([\d.]+)\s*坪/)
   if (balconyMatch) {
     result.balconyArea = parseFloat(balconyMatch[1])
   }
@@ -98,7 +97,7 @@ export const parsePrintPageText = (text) => {
   // 支援兩種格式：
   //   「共同使用部分，本共同使用部分項目有：...」（瀏覽器複製格式）
   //   「本共同使用部分之項目有：...」（列印頁面直接複製格式）
-  const commonAreaPattern = /([\d.]+)\s*坪\s+(?:共同使用部分[，,])?本共同使用部分之?項目有[：:]([^。]+)/g
+  const commonAreaPattern = /([\d.]+)\s*坪\s+(?:共同使用部分[，,])?本共同使用部分之?項目有[：:]?([^。]+)/g
   let commonMatch
   while ((commonMatch = commonAreaPattern.exec(text)) !== null) {
     const area = parseFloat(commonMatch[1])

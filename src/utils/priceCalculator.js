@@ -14,10 +14,6 @@ export const calculateAreas = (params) => {
   // commonArea1 (18.93) 包含了車位的公設部分
   // 實際公設 = commonArea1 + commonArea2 - 車位中的公設部分
   const totalCommonWithParking = params.commonArea1 + params.commonArea2
-  
-  // 計算實際不含車位的公設
-  // 根據實價登錄，真實公設應該是 12.44坪
-  const parkingInCommon = totalCommonWithParking - 12.44 // 應該等於 10.36
   const commonAreasWithoutParking = totalCommonWithParking - params.parkingArea
   
   // 建物總面積（不含車位）

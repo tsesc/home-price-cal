@@ -636,3 +636,204 @@ describe('parsePrintPageText - 車位無單獨定價格式', () => {
     expect(totalWithParking).toBeCloseTo(44.45, 1)
   })
 })
+
+// 第六種格式：「項目有」後無冒號 + 使用「陽臺」正體字
+const noColonCommonAreaText = `logo
+地段位置或門牌:    康寧街４５９巷１９號十三樓
+社區名稱:    合康-冠東城B1-06F
+交易標的:    房地(土地+建物)+車位
+交易日期:    109/08/18
+交易總價:    22,200,000    元
+交易單價約:    384,238    (元/坪)
+交易總面積:    62.02    坪
+主建物佔比(%):    56.89%
+交易棟筆數:
+土地:    1    筆    建物:    1    棟(戶)    車位:    1    個
+建物型態:    住宅大樓(11層含以上有電梯)
+屋齡:
+建物現況格局:    4房2廳2衛
+主要用途:    住家用
+車位交易總價:    215
+樓別/樓高:    十三層/十九層
+管理組織:    有
+有無電梯:    有
+備註:    建物第一次登記後移轉
+交易明細
+土地建物買賣  交易明細
+土  地  資  料
+土地區段位置    土地移轉面積    使用分區或編定
+金龍段188地號    7.70坪 持分移轉(478/100000)    都市：商業區
+建  物  資  料
+屋齡    建物移轉面積    持分    主要用途    主要建材    建築
+完成年月    總樓層數    建物分層
+0        主建物    29.69坪    全筆移轉    集合住宅    鋼筋混凝土構造    109/09    十九層    十三層,陽臺,雨遮
+陽臺    3.31坪
+雨遮    2.46坪
+0    15.88坪        共同使用部分，本共同使用部分之項目有車道、梯廳、門廊（空橋下）、門廊（頂蓋下）、走道、陽台、消防中繼機房、台電配電場所、公眾用梯廳、防災中心、計程車臨停車位、垃圾車車位、垃圾儲藏空間、防空避難室兼停車空間、電信機房、機房、停車空間、發電機房、消防機房、雨污水機房等二十項。    鋼筋混凝土構造    109/09    十九層
+0    4.11坪        共同使用部分，本共同使用部分之項目有門廳、排煙室、緊急昇降機、行動不便昇降機、梯廳、特別安全梯、陽台、男廁、女廁、管委會使用空間、水箱、水箱室、機房等十三項。    鋼筋混凝土構造    109/09    十九層
+0    6.57坪        共同使用部分，本共同使用部分之項目有行動不便昇降機、排煙室、緊急昇降機、梯廳、特別安全梯等五項。    鋼筋混凝土構造    109/09    十九層
+車  位  資  料
+車位類別    車位交易價格    車位面積    所在樓層
+坡道平面    2,150,000元    9.84坪    地下二樓`
+
+describe('parsePrintPageText - 「項目有」後無冒號格式', () => {
+  it('應正確解析交易總價', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.totalPrice).toBe(22200000)
+  })
+
+  it('應正確解析主建物面積', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.mainBuildingArea).toBe(29.69)
+  })
+
+  it('應正確解析陽臺面積（正體字）', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.balconyArea).toBe(3.31)
+  })
+
+  it('應正確解析雨遮面積', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.canopyArea).toBe(2.46)
+  })
+
+  it('應正確歸類共同使用部分（三筆皆含一般關鍵字）', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    // 15.88 + 4.11 + 6.57 = 26.56
+    expect(data.commonArea2).toBeCloseTo(26.56, 2)
+  })
+
+  it('車位相關公設應為 0', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.commonArea1).toBe(0)
+  })
+
+  it('應正確解析車位面積和價格', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.parkingArea).toBe(9.84)
+    expect(data.parkingPrice).toBe(215)
+  })
+
+  it('應正確解析樓別和樓高', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.currentFloor).toBe(13)
+    expect(data.floors).toBe(19)
+  })
+
+  it('應正確解析土地面積', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    expect(data.landArea).toBe(7.70)
+  })
+
+  it('應正確計算單價', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    // 公設不含車位 = 26.56 - 9.84 = 16.72
+    // 建物總面積 = 29.69 + 3.31 + 2.46 + 16.72 = 52.18
+    // 單價 = (2220 - 215) / 52.18 ≈ 38.42
+    expect(data.unitPrice).toBeCloseTo(38.42, 0)
+  })
+
+  it('總面積應與實價登錄吻合（62.02 坪）', () => {
+    const { data } = parsePrintPageText(noColonCommonAreaText)
+    const commonWithoutParking = data.commonArea1 + data.commonArea2 - data.parkingArea
+    const buildingTotal = data.mainBuildingArea + data.balconyArea + data.canopyArea + commonWithoutParking
+    const totalWithParking = buildingTotal + data.parkingArea
+    expect(totalWithParking).toBeCloseTo(62.02, 1)
+  })
+
+  it('應正確解析 meta 欄位', () => {
+    const { meta } = parsePrintPageText(noColonCommonAreaText)
+    expect(meta.address).toBe('康寧街４５９巷１９號十三樓')
+    expect(meta.communityName).toBe('合康-冠東城B1-06F')
+    expect(meta.transactionDate).toBe('109/08/18')
+    expect(meta.parkingType).toBe('坡道平面')
+    expect(meta.parkingFloor).toBe('地下二樓')
+    expect(meta.buildingMaterial).toBe('鋼筋混凝土構造')
+  })
+})
+
+// 第七種格式：「陽臺」正體字 + 有冒號 + 車位無樓層資訊
+const traditionalBalconyText = `logo
+地段位置或門牌:    汐止區湖前街３１巷１７號七樓
+社區名稱:    耀東城
+交易標的:    房地(土地+建物)+車位
+交易日期:    108/09/28
+交易總價:    21,700,000    元
+交易單價約:    396,532    (元/坪)
+交易總面積:    59.90    坪
+主建物佔比(%):    58.82%
+交易棟筆數:
+土地:    1    筆    建物:    1    棟(戶)    車位:    1    個
+建物型態:    住宅大樓(11層含以上有電梯)
+屋齡:
+建物現況格局:    3房2廳2衛
+主要用途:    住家用
+車位交易總價:    210
+樓別/樓高:    七層/十七層
+管理組織:    有
+有無電梯:
+備註:    建物第一次登記後移轉
+交易明細
+土地建物買賣  交易明細
+土  地  資  料
+土地區段位置    土地移轉面積    使用分區或編定
+金龍段231地號    8.65坪 持分移轉(1260/100000)    都市：住
+建  物  資  料
+屋齡    建物移轉面積    持分    主要用途    主要建材    建築
+完成年月    總樓層數    建物分層
+0        主建物    29.08坪    全筆移轉    集合住宅    鋼筋混凝土構造    109/01    十七層    七層,陽臺,雨遮
+陽臺    3.11坪
+雨遮    1.67坪
+0    20.01坪        共同使用部分，本共同使用部分之項目有：管委會使用空間、特別安全梯、梯廳、排煙室、特安全梯、管理員室、自來水箱、消防水箱、電梯機房、防空避難室兼停車空間、台電配電場所、自行車停車位、垃圾暫存室、垃圾車暫停車位、裝卸車位、排風、進風、防災中心、停車空間、消防機房、緊急發電機室、電信機房、機房、污水機房、安全梯等２５項。    鋼筋混凝土構造    109/01    十七層
+0    6.05坪        共同使用部分，本共同使用部分之項目有：梯廳、排煙室、特別安全梯等３項。    鋼筋混凝土構造    109/01    十七層
+車  位  資  料
+車位類別    車位交易價格    車位面積    所在樓層
+坡道平面    2,100,000元    10.48坪    `
+
+describe('parsePrintPageText - 「陽臺」正體字格式', () => {
+  it('應正確解析陽臺面積（正體字）', () => {
+    const { data } = parsePrintPageText(traditionalBalconyText)
+    expect(data.balconyArea).toBe(3.11)
+  })
+
+  it('應正確解析主建物面積', () => {
+    const { data } = parsePrintPageText(traditionalBalconyText)
+    expect(data.mainBuildingArea).toBe(29.08)
+  })
+
+  it('應正確歸類共同使用部分', () => {
+    const { data } = parsePrintPageText(traditionalBalconyText)
+    expect(data.commonArea1).toBe(0)
+    expect(data.commonArea2).toBeCloseTo(26.06, 2)
+  })
+
+  it('應正確解析車位（無樓層資訊）', () => {
+    const { data, meta } = parsePrintPageText(traditionalBalconyText)
+    expect(data.parkingArea).toBe(10.48)
+    expect(data.parkingPrice).toBe(210)
+    expect(meta.parkingType).toBe('坡道平面')
+    expect(meta.parkingFloor).toBe('')
+  })
+
+  it('總面積與單價應正確', () => {
+    const { data } = parsePrintPageText(traditionalBalconyText)
+    const cw = data.commonArea1 + data.commonArea2 - data.parkingArea
+    const bt = data.mainBuildingArea + data.balconyArea + data.canopyArea + cw
+    const total = bt * data.unitPrice + data.parkingPrice
+    // 含車位 59.92 ≈ 實價登錄 59.90（四捨五入差異）
+    expect(bt + data.parkingArea).toBeCloseTo(59.90, 0)
+    // 單價 ≈ 39.65 萬/坪
+    expect(data.unitPrice).toBeCloseTo(39.64, 0)
+    // 總價 ≈ 2170 萬
+    expect(total).toBeCloseTo(2170, -1)
+  })
+
+  it('應正確解析 meta 欄位', () => {
+    const { meta } = parsePrintPageText(traditionalBalconyText)
+    expect(meta.address).toBe('汐止區湖前街３１巷１７號七樓')
+    expect(meta.communityName).toBe('耀東城')
+    expect(meta.transactionDate).toBe('108/09/28')
+    expect(meta.buildingMaterial).toBe('鋼筋混凝土構造')
+    expect(meta.completionDate).toBe('109/01')
+  })
+})
