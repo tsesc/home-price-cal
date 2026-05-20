@@ -154,8 +154,8 @@ export const parsePrintPageText = (text) => {
 
   if (buildingTotalArea > 0 && totalPriceWan > 0) {
     result.unitPrice = Math.round(
-      ((totalPriceWan - parkingPriceWan) / buildingTotalArea) * 100
-    ) / 100
+      ((totalPriceWan - parkingPriceWan) / buildingTotalArea) * 10000
+    ) / 10000
   }
 
   // 將價格統一為萬元
