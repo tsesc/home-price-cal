@@ -825,6 +825,25 @@ h3 {
   box-shadow: none;
 }
 
+.save-record-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #43a047 0%, #66bb6a 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 15px;
+}
+
+.save-record-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(67, 160, 71, 0.4);
+}
+
 @media print {
   /* 隱藏所有非列印內容 */
   body > *:not(.print-modal) {

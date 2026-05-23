@@ -3,8 +3,11 @@ import './App.css'
 import { calculateAreas, calculatePrices, calculateRatios } from './utils/priceCalculator'
 import ImportDialog from './components/ImportDialog'
 import PrintReport from './components/PrintReport'
+import RecordTabs from './components/RecordTabs'
+import SaveRecordDialog from './components/SaveRecordDialog'
 
 const STORAGE_KEY = 'home-price-cal'
+const RECORDS_KEY = 'home-price-cal-records'
 
 function loadSavedState() {
   try {
@@ -12,6 +15,14 @@ function loadSavedState() {
     if (saved) return JSON.parse(saved)
   } catch { /* ignore */ }
   return null
+}
+
+function loadRecords() {
+  try {
+    const saved = localStorage.getItem(RECORDS_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch { /* ignore */ }
+  return { records: [], activeRecordId: null }
 }
 
 function App() {
@@ -41,6 +52,11 @@ function App() {
   const [showImportDialog, setShowImportDialog] = useState(false)
   const [transactionData, setTransactionData] = useState(initialTransaction)
   const [showPrintReport, setShowPrintReport] = useState(false)
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+
+  const savedRecords = loadRecords()
+  const [records, setRecords] = useState(savedRecords.records)
+  const [activeRecordId, setActiveRecordId] = useState(savedRecords.activeRecordId)
 
   // 初始化時就計算，避免空物件問題
   const [areas, setAreas] = useState(() => calculateAreas(initialParams))
@@ -53,6 +69,12 @@ function App() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ parameters, transactionData }))
     } catch { /* quota exceeded - ignore */ }
   }, [parameters, transactionData])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(RECORDS_KEY, JSON.stringify({ records, activeRecordId }))
+    } catch { /* ignore */ }
+  }, [records, activeRecordId])
 
   useEffect(() => {
     const calculatedAreas = calculateAreas(parameters)
@@ -97,10 +119,78 @@ function App() {
     setShowImportDialog(false)
   }
 
+  const handleOpenSaveDialog = () => {
+    setShowSaveDialog(true)
+  }
+
+  const handleSaveRecord = (name) => {
+    const activeRecord = records.find((r) => r.id === activeRecordId)
+    if (activeRecord) {
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === activeRecordId
+            ? { ...r, name, parameters, transactionData, savedAt: new Date().toISOString() }
+            : r
+        )
+      )
+    } else {
+      const newId = 'rec_' + Date.now()
+      setRecords((prev) => [
+        ...prev,
+        { id: newId, name, parameters, transactionData, savedAt: new Date().toISOString() },
+      ])
+      setActiveRecordId(newId)
+    }
+    setShowSaveDialog(false)
+  }
+
+  const handleSelectRecord = (id) => {
+    const record = records.find((r) => r.id === id)
+    if (!record) return
+    setParameters(record.parameters)
+    setTransactionData(record.transactionData)
+    setActiveRecordId(id)
+  }
+
+  const handleDeleteRecord = (id) => {
+    if (!confirm('確定要刪除這筆紀錄嗎？')) return
+    const idx = records.findIndex((r) => r.id === id)
+    const next = records.filter((r) => r.id !== id)
+    setRecords(next)
+    if (id === activeRecordId) {
+      if (next.length > 0) {
+        const newIdx = Math.min(idx, next.length - 1)
+        handleSelectRecord(next[newIdx].id)
+      } else {
+        setActiveRecordId(null)
+      }
+    }
+  }
+
+  const handleNewRecord = () => {
+    setParameters({ ...defaultParams })
+    setTransactionData(null)
+    setActiveRecordId(null)
+  }
+
+  const getSaveDialogDefaultName = () => {
+    const activeRecord = records.find((r) => r.id === activeRecordId)
+    if (activeRecord) return activeRecord.name
+    return transactionData?.communityName || transactionData?.address || ''
+  }
+
   return (
     <div className="container">
       <h1>房價計算器</h1>
-      
+
+      <RecordTabs
+        records={records}
+        activeRecordId={activeRecordId}
+        onSelect={handleSelectRecord}
+        onDelete={handleDeleteRecord}
+        onNew={handleNewRecord}
+      />
+
       <div className="calculator-wrapper">
         <div className="parameters-section">
           <h2>參數調整</h2>
@@ -113,6 +203,9 @@ function App() {
             disabled={!transactionData?.address}
           >
             產生報告
+          </button>
+          <button className="save-record-btn" onClick={handleOpenSaveDialog}>
+            儲存紀錄
           </button>
 
           {transactionData && (
@@ -421,6 +514,14 @@ function App() {
         <ImportDialog
           onApply={handleImportApply}
           onClose={() => setShowImportDialog(false)}
+        />
+      )}
+
+      {showSaveDialog && (
+        <SaveRecordDialog
+          defaultName={getSaveDialogDefaultName()}
+          onSave={handleSaveRecord}
+          onClose={() => setShowSaveDialog(false)}
         />
       )}
 
